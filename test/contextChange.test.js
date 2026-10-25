@@ -46,7 +46,7 @@ const check = (ok, msg) => { console.log((ok ? '  ok   ' : '  FAIL ') + msg); if
     const r = await run('ctx-bad.html');
     check(r.v.includes('cc-focus-context-change'), '3.2.1 fails — focus changed the page title');
     check(r.v.includes('cc-input-context-change'), '3.2.2 fails — changing the select opened a dialog');
-    check(r.v.includes('cc-hover-not-dismissable'), '1.4.13 fails — native title tooltip');
+    check(!r.v.includes('cc-hover-not-dismissable'), '1.4.13 — a native title tooltip is user-agent controlled, not a failure');
     check(r.selectValue === 'a', '  the select was restored to its original value');
   }
 
@@ -59,6 +59,14 @@ const check = (ok, msg) => { console.log((ok ? '  ok   ' : '  FAIL ') + msg); if
     check(!r.v.includes('cc-hover-not-persistent'), '1.4.13 persistent — no violation');
     check(r.p.includes('cc-focus-context-change') && r.p.includes('cc-input-context-change'),
       '  passes are actually emitted (not just silence)');
+  }
+
+  console.log('\nctx-fp.html — patterns that are not a change of context');
+  {
+    const r = await run('ctx-fp.html');
+    check(!r.v.includes('cc-input-context-change'), 'a filter select that only rewrites the query string is not 3.2.2');
+    check(!r.v.includes('cc-focus-context-change'), 'a late cookie banner and an unread counter are not blamed on focus');
+    check(r.p.includes('cc-focus-context-change') && r.p.includes('cc-input-context-change'), '  both pass');
   }
 
   await browser.close();

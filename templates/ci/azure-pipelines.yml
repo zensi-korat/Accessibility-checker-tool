@@ -5,8 +5,10 @@
 #   A11Y_STORAGE_STATE_B64  (secret) or a saved session (SSO / MFA): run `npx accessibility-check login`
 #                           locally and paste the base64 it prints
 #   A11Y_PUBLIC_ONLY = 1    or scan only the pages that need no login
-# Optional:
-#   A11Y_FAIL_ON_CRITICAL / A11Y_FAIL_ON_SERIOUS  build-failure thresholds
+# Build gate (confirmed WCAG violations only; review items and best-practice findings never fail it):
+#   A11Y_FAIL_ON_CRITICAL   default 0 — any confirmed critical violation fails the build
+#   A11Y_FAIL_ON_SERIOUS    unset by default — set e.g. 0 once the backlog is cleared
+#   A11Y_GATE_UNIQUE = 1    count a defect repeated on many pages once
 #
 # The app is started by WEB_SERVER in a11y.config.js.
 trigger:
@@ -24,6 +26,16 @@ schedules:
 
 pool:
   vmImage: ubuntu-latest
+
+# Defaults for the build gate. A pipeline variable of the same name wins;
+# an unset one would otherwise reach the scan as the literal "$(NAME)".
+variables:
+  - name: a11yFailOnCritical
+    value: $[coalesce(variables['A11Y_FAIL_ON_CRITICAL'], '0')]
+  - name: a11yFailOnSerious
+    value: $[coalesce(variables['A11Y_FAIL_ON_SERIOUS'], '')]
+  - name: a11yGateUnique
+    value: $[coalesce(variables['A11Y_GATE_UNIQUE'], '')]
 
 steps:
   - task: NodeTool@0
@@ -60,8 +72,9 @@ steps:
       A11Y_STORAGE_STATE_B64: $(A11Y_STORAGE_STATE_B64)
       A11Y_USER: $(A11Y_USER)
       A11Y_PASS: $(A11Y_PASS)
-      A11Y_FAIL_ON_CRITICAL: $(A11Y_FAIL_ON_CRITICAL)
-      A11Y_FAIL_ON_SERIOUS: $(A11Y_FAIL_ON_SERIOUS)
+      A11Y_FAIL_ON_CRITICAL: $(a11yFailOnCritical)
+      A11Y_FAIL_ON_SERIOUS: $(a11yFailOnSerious)
+      A11Y_GATE_UNIQUE: $(a11yGateUnique)
 
   - task: PublishTestResults@2
     displayName: Per-page WCAG results

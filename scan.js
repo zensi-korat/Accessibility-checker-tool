@@ -50,6 +50,10 @@ try {
   console.error(`\n✗ ${e.message}\n`);
   process.exit(2);
 }
+// A start URL naming a file (…/index.html) is a page, not the base every route
+// is appended to: keep its folder as BASE_URL and start from the file.
+const { base: BASE_FROM_URL, startPath: START_PATH } = require('./lib/routes/live').splitStartUrl(config.BASE_URL);
+config.BASE_URL = BASE_FROM_URL;
 const { createMapper } = require('./lib/codeMap');
 const { autoExplore } = require('./lib/explore');
 const { instrumentListeners } = require('./lib/clickable');
@@ -252,11 +256,36 @@ let loginRedirects = 0;
 let skipProtected = false;
 const skippedPages = [];
 
+// Pages that answered with an HTTP error (or a "Not found" screen). Not
+// scanned — their markup is the server's error page, not the app.
+const errorPages = [];
+
+/** Same document? Ignores a trailing slash and a trailing index.html. */
+const pathKey = (p) => {
+  const [route, hash] = String(p || '/').split('#');
+  const [pathname, query] = route.split('?');
+  const clean = (pathname.replace(/\/index\.html?$/i, '/').replace(/\/+$/, '') || '/') + (query ? `?${query}` : '');
+  return hash !== undefined ? `${clean}#${hash}` : clean;
+};
+
+/** Path the browser ended up on when it differs from the one requested, else null. */
+function redirectTarget(requested, landed) {
+  try {
+    const a = new URL(requested), b = new URL(landed);
+    if (a.origin !== b.origin) return b.href;
+    // Hash routes redirect inside the fragment; compare that when there is one.
+    const route = (u) => (u.hash.startsWith('#/') || u.hash.startsWith('#!/') ? pathKey(u.pathname) + u.hash.split('?')[0] : pathKey(u.pathname));
+    return route(a) === route(b) ? null : b.pathname + b.hash;
+  } catch { return null; }
+}
+
 async function scanPage(page, pageDef, scans) {
   const url = config.BASE_URL.replace(/\/$/, '') + pageDef.path;
   log(`\n▶ ${pageDef.name}  (${url})`);
+  let status = 0;
   try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    const res = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
+    status = res ? res.status() : 0;
     await page.waitForLoadState('load').catch(() => {});
   } catch (e) {
     log(`   ✗ could not load: ${e.message.split('\n')[0]}`);
@@ -283,10 +312,20 @@ async function scanPage(page, pageDef, scans) {
     log('   ✗ Redirected to login — the session expired mid-run. Not scanned.');
     return;
   }
-  if (guard.notfound) {
-    log('   ✗ Page returned "Not Found" (404). Check the path and that this account can access it.');
+  // The HTTP status is the reliable signal; the title check catches SPAs that
+  // render their own "Not found" screen with a 200.
+  if (status >= 400 || guard.notfound) {
+    const what = status === 401 || status === 403 ? `Access denied (${status})`
+      : status >= 400 && status !== 404 ? `HTTP ${status}` : 'Not Found (404)';
+    log(`   ✗ Page returned ${what} — not scanned. Check the path and that this account can access it.`);
+    errorPages.push({ name: pageDef.name, path: pageDef.path, status: status || 404 });
     return;
   }
+  // A redirect elsewhere in the app (e.g. /admin → /dashboard for a role
+  // without access) would otherwise file the target's issues under this
+  // route's name. Keep the requested name but say where it actually landed.
+  const redirectedTo = redirectTarget(url, page.url());
+  if (redirectedTo) log(`   ⚠ Redirected to ${redirectedTo} — issues below are from that page.`);
 
   // Base state — run the dynamic keyboard/SR checks + the DOM inventory here.
   const pageStartedAt = Date.now();
@@ -296,7 +335,7 @@ async function scanPage(page, pageDef, scans) {
   // 3.2.3/3.2.4/3.2.6/2.4.5 are cross-page, so only a fingerprint is taken
   // here; the comparison happens once every page has been visited.
   const consistency = await collectSignature(page);
-  scans.push({ page: pageDef.name, url, ...base, inventory, consistency });
+  scans.push({ page: pageDef.name, url, ...(redirectedTo ? { redirectedTo } : {}), ...base, inventory, consistency });
   log(`   • initial: ${base.violations.length} violations, ${base.incomplete.length} to review`
     + (TIMING ? `  [${((Date.now() - pageStartedAt) / 1000).toFixed(0)}s]` : ''));
 
@@ -351,10 +390,26 @@ async function finish(scans, mapper) {
   const res = finalizeRun({ scans, config, mapper, log, skippedPages, verifyWith: { baseline, presence } });
   if (VERIFY && res.data.verification) {
     const c = res.data.verification.counts;
-    if (c.still || c.new) process.exitCode = 1;
-    log(c.still || c.new
-      ? `\n✗ Not done yet: ${c.still} still failing, ${c.new} new. Fix those and run \`${CLI} verify\` again.`
-      : `\n✔ All re-checked issues are fixed${c.unverified ? ` (${c.unverified} could not be verified — see the dashboard)` : ''}.`);
+    // Same basis as the CI gate: confirmed violations decide the exit code.
+    // Needs-review items are listed, but a page with only unconfirmed contrast
+    // results could otherwise never pass verify.
+    const strict = process.env.A11Y_GATE_INCLUDE_UNCONFIRMED === '1';
+    const still = strict ? c.still : c.stillConfirmed;
+    const fresh = strict ? c.new : c.newConfirmed;
+    const reviewOnly = (c.still - c.stillConfirmed) + (c.new - c.newConfirmed);
+    if (still || fresh) {
+      process.exitCode = 1;
+      log(`\n✗ Not done yet: ${still} still failing, ${fresh} new${strict ? '' : ' (confirmed violations)'}. Fix those and run \`${CLI} verify\` again.`);
+    } else {
+      const notes = [
+        c.unverified && `${c.unverified} could not be verified`,
+        c.notRechecked && `${c.notRechecked} on pages that were not re-checked`,
+        !strict && reviewOnly && `${reviewOnly} needs-review item(s) remain`,
+      ].filter(Boolean);
+      log(c.notRechecked || c.unverified
+        ? `\n✔ No confirmed violations left among the issues that could be re-checked — but ${notes.join(', ')}. See the dashboard.`
+        : `\n✔ All re-checked issues are fixed${notes.length ? ` (${notes.join(', ')})` : ''}.`);
+    }
   }
   return res;
 }
@@ -374,11 +429,21 @@ async function scanAll() {
       log(`\nNo previous scan to verify against — running a full scan; run \`${CLI} verify\` again after fixing.`);
     } else if (!process.argv.includes('--all')) {
       const open = verify.pagesWithIssues(baseline);
-      const before = config.PAGES.length;
-      config.PAGES = config.PAGES.filter((p) => open.has(p.name));
-      log(`\nVerify: re-scanning ${config.PAGES.length} of ${before} page(s) that had issues last time (--all for every page).`);
-      config.AUTO_EXPLORE = false;
-      lintOnly = !config.PAGES.length;
+      if (config.AUTO_EXPLORE) {
+        // Crawl-mode pages aren't in PAGES — re-run the crawl; verify then
+        // compares every page it reaches against its own baseline.
+        log('\nVerify: AUTO_EXPLORE is on — re-crawling the site and comparing each page with its last scan.');
+      } else {
+        const before = config.PAGES.length;
+        config.PAGES = config.PAGES.filter((p) => open.has(p.name));
+        log(`\nVerify: re-scanning ${config.PAGES.length} of ${before} page(s) that had issues last time (--all for every page).`);
+        // Only call it lint-only when the open issues really are all lint ones.
+        lintOnly = !config.PAGES.length && [...open].every((p) => p === verify.LINT_PAGE);
+        if (!config.PAGES.length && !lintOnly) {
+          log(`  ⚠ The pages with open issues (${[...open].filter((p) => p !== verify.LINT_PAGE).slice(0, 5).join(', ')}) are no longer in PAGES — run \`${CLI} verify --all\` or scan again.`);
+          lintOnly = true;
+        }
+      }
     }
   }
   if (!config.AUTO_EXPLORE && !config.PAGES.length && !lintOnly && !config._meta.quick) {
@@ -395,7 +460,9 @@ async function scanAll() {
   else log('Code mapping OFF (set REPO_PATH in the config to enable).');
 
   if (lintOnly) {
-    log('Only source-lint issues were open last time — re-running the lint, no browser needed.');
+    log(verify.pagesWithIssues(baseline).size && [...verify.pagesWithIssues(baseline)].every((p) => p === verify.LINT_PAGE)
+      ? 'Only source-lint issues were open last time — re-running the lint, no browser needed.'
+      : 'Re-running the lint only; the browser issues above are reported as not re-checked.');
     const { singleFile } = await finish([], mapper);
     if (singleFile) openReport(singleFile.file);
     return;
@@ -640,20 +707,32 @@ async function scanAll() {
     log(`\nNo a11y.config.js here — quick scan. Finding pages (read-only crawl, up to ${max})…`);
     try {
       // After login, so the crawl reuses the saved session and sees the app.
-      const live = await discoverLive(config, { maxPages: max, log });
+      const seeds = START_PATH && START_PATH !== '/' ? [config.BASE_URL + START_PATH] : [];
+      const live = await discoverLive(config, { maxPages: max, log, seeds });
       const manifest = mergeManifest(null, applyLive([], live.found).routes);
       config.PAGES = pagesFromManifest(manifest).slice(0, max);
       log(`  ${config.PAGES.length} page(s) to scan. For a repeatable setup run \`${CLI} init\` in your project.`);
     } catch (e) {
       log(`  ⚠ crawl failed (${String(e.message).split('\n')[0]}) — scanning the start page only.`);
     }
-    if (!config.PAGES.length) config.PAGES = [{ name: 'Home', path: '/' }];
+    if (!config.PAGES.length) config.PAGES = [{ name: 'Home', path: START_PATH || '/' }];
   }
+
+  // One document, one scan: '/' and '/index.html' (or '/x' and '/x/') listed
+  // separately would report every issue on that page twice.
+  const seenPaths = new Map();
+  config.PAGES = config.PAGES.filter((p) => {
+    if (p.actions && p.actions.length) return true; // different states of the page — keep
+    const k = pathKey(p.path);
+    if (seenPaths.has(k)) { log(`  (skipping "${p.name}" — same page as "${seenPaths.get(k)}")`); return false; }
+    seenPaths.set(k, p.name);
+    return true;
+  });
 
   let scans = [...preScans];
   if (config.AUTO_EXPLORE) {
     // Auto-discover pages + click clickable elements to reveal hidden UI.
-    scans = await autoExplore(page, config, { analyze, log, pageInventory });
+    scans = await autoExplore(page, config, { analyze, log, pageInventory, collectSignature });
   } else {
     // Precise mode: only the pages/actions you listed.
     for (const pageDef of config.PAGES) {
@@ -681,6 +760,12 @@ async function scanAll() {
     log(`\n⚠ ${loginRedirects} page(s) redirected to the login screen and were NOT scanned.`);
     log('  The session expired part-way through. Counts below cover only the pages that loaded.');
     process.exitCode = 1;
+  }
+
+  if (errorPages.length) {
+    log(`\n⚠ ${errorPages.length} page(s) answered with an error and were NOT scanned:`);
+    errorPages.slice(0, 10).forEach((p) => log(`    · ${p.name}  ${p.path}  (${p.status})`));
+    if (errorPages.length > 10) log(`    · … +${errorPages.length - 10} more`);
   }
 
   if (skippedPages.length) {

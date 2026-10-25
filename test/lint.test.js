@@ -14,7 +14,7 @@
  *   node test/lint.test.js
  */
 const path = require('path');
-const { lintProject, toScan } = require('../lib/static/eslint');
+const { lintProject, toScan, dropShadowed } = require('../lib/static/eslint');
 const { detectStacks } = require('../lib/adapters');
 const { aggregate } = require('../lib/aggregate');
 
@@ -37,7 +37,12 @@ const at = (res, rule, loc) => res.findings.find((f) => f.ruleId === rule && `${
   check(!react.findings.some((f) => f.file.includes('ignored') || f.line === 11), 'eslint-disable-next-line is honoured');
   check(!react.findings.some((f) => /node_modules|dist\//.test(f.file)), 'node_modules and dist are skipped');
   check(!at(react, 'jsx-a11y/control-has-associated-label', 'src/App.jsx:8') && at(react, 'jsx-a11y/anchor-has-content', 'src/App.jsx:8'), 'heuristic shadowed by a precise rule on the same line is dropped');
-  check(at(react, 'jsx-a11y/control-has-associated-label', 'src/App.jsx:9'), '… but kept when the precise rule is about another criterion');
+  {
+    const f = (ruleId, conf, sc) => ({ ruleId, file: 'a.jsx', line: 9, mapping: { conf, sc } });
+    const kept = dropShadowed([f('precise', 'high', ['2.4.3']), f('heuristic', 'review', ['4.1.2'])]);
+    check(kept.some((x) => x.ruleId === 'heuristic'), '… but kept when the precise rule is about another criterion');
+  }
+  check(!at(react, 'jsx-a11y/control-has-associated-label', 'src/App.jsx:9'), 'control-has-associated-label runs with the plugin\'s recommended options (inputs are left to the label rules)');
   check(react.unparsed.length === 0, 'no parse failures');
 
   console.log('\nVue SFC');

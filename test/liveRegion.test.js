@@ -47,6 +47,7 @@ const check = (ok, msg) => {
     const ids = {
       v: res.violations.map((r) => r.id),
       p: res.passes.map((r) => r.id),
+      i: res.incomplete.map((r) => r.id),
     };
     const emailValue = await page.locator('#email').inputValue().catch(() => null);
     await guard.uninstall();
@@ -58,7 +59,8 @@ const check = (ok, msg) => {
   {
     const { ids } = await run('livereg-bad.html');
     check(ids.v.includes('lr-status-not-announced'), '4.1.3 fails — not in a live region');
-    check(ids.v.includes('lr-error-not-associated'), '3.3.1 fails — not linked to the field');
+    check(ids.i.includes('lr-error-not-associated') && !ids.v.includes('lr-error-not-associated'),
+      '3.3.1 — unlinked error goes to review (3.3.1 only requires text identification)');
     check(ids.p.length === 0, '  no passes emitted');
   }
 
@@ -68,6 +70,13 @@ const check = (ok, msg) => {
     check(ids.p.includes('lr-status-not-announced'), '4.1.3 passes — announced via role="alert"');
     check(ids.p.includes('lr-error-not-associated'), '3.3.1 passes — linked via aria-describedby');
     check(ids.v.length === 0, '  no violations emitted');
+  }
+
+  console.log('\nlivereg-focus.html — focus moves to the invalid field, error linked by aria-describedby');
+  {
+    const { ids } = await run('livereg-focus.html');
+    check(!ids.v.includes('lr-status-not-announced'), '4.1.3 not violated — the error is read when focus lands on its field');
+    check(!ids.v.includes('lr-error-not-associated') && !ids.i.includes('lr-error-not-associated'), '3.3.1 linked through a wrapper id');
   }
 
   console.log('\nlivereg-none.html — nothing to trigger');
