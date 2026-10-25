@@ -1,7 +1,7 @@
 {
   "name": "accessibility-check",
   "version": "0.1.0",
-  "description": "WCAG 2.2 A/AA accessibility checker for any web project \u2014 React, Next.js, Angular, Vue/Nuxt, ASP.NET or legacy sites. Scans the running app with Playwright (axe-core + IBM engine), lints the source, handles login screens, maps issues to file:line and verifies fixes on re-run.",
+  "description": "WCAG 2.2 A/AA accessibility checker for any web project — React, Next.js, Angular, Vue/Nuxt, ASP.NET or legacy sites. Scans the running app with Playwright (axe-core + IBM engine), lints the source, handles login screens, maps issues to file:line and verifies fixes on re-run.",
   "keywords": [
     "accessibility",
     "a11y",
@@ -20,6 +20,14 @@
     "cli"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zensi-korat/Accessibility-checker-tool.git"
+  },
+  "homepage": "https://github.com/zensi-korat/Accessibility-checker-tool#readme",
+  "bugs": {
+    "url": "https://github.com/zensi-korat/Accessibility-checker-tool/issues"
+  },
   "type": "commonjs",
   "bin": {
     "accessibility-check": "bin/a11y.js",
