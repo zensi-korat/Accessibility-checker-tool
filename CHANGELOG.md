@@ -1,18 +1,5 @@
 # Changelog
 
-## Unreleased — accuracy
-
-- One defect, one issue: a node that is "needs review" in one state and a violation in another is a violation; the tool's own checks are folded into the axe issue for the same element (`alsoFlaggedBy`); the contrast sampler replaces axe's undecided result instead of adding a second one.
-- Repeats across pages are counted once in `stats.unique` and shown as "N violations (M unique)"; `A11Y_GATE_UNIQUE=1` gates on that.
-- Headline numbers, health scores, charts and trends count confirmed WCAG violations only. Review items and best-practice findings are listed but shown separately; trends and Δ only compare scans of the same pages.
-- Best-practice axe rules are labelled as such and never count toward the CI gate.
-- A criterion whose rules were only inapplicable is no longer "Passed"; the status is renamed "No automated failures".
-- IBM Equal Access: recommendation-level rules are ignored, it no longer decides manual-only criteria, and an IBM-only failure is "needs review" (no element to act on).
-- 3.2.6 Consistent Help and 3.3.7 Redundant Entry are Level A.
-- JUnit: `tests=` matches the real number of cases; lint findings get their own suite.
-- CI templates fail on confirmed critical violations by default; the scan warns in CI when no threshold is set; non-numeric thresholds (an unset Azure variable) no longer silently disable the gate.
-- Fix advice no longer names Bootstrap, `_Layout.cshtml` or jQuery for every project; stack-specific advice comes from the detected stack.
-
 ## 0.1.0 — first public release
 
 - `scan` — WCAG 2.2 A + AA scan of the running app with Playwright (axe-core + IBM Equal Access), including modals, tabs and other revealed states.
@@ -23,3 +10,26 @@
 - `init` / `discover` — detect the stack (React, Next.js, Angular, Vue/Nuxt, ASP.NET Core, Web Forms) and read routes from source; `--live` adds the sitemap and a read-only crawl.
 - Playwright fixture and reporter for checks inside existing E2E tests.
 - CI templates for GitHub Actions, Azure Pipelines and GitLab.
+
+### Fix plan
+
+- **Fix plan** (`a11y-report/fix-plan.html`, a tab in the single-file report, and a "Where to start" panel on the dashboard). Each unique defect is placed in a tier: Fix first, Fix next, Schedule, Needs a decision, Can wait or Done. Within a tier it is ordered by impact, WCAG level, who it blocks, how many pages it appears on, and estimated effort. Every card explains its placement. Quick wins can be filtered, cards can be copied as tickets, and you can mark items in progress, snooze them, or set them aside as won't fix.
+- **`a11y fix`** serves the plan live on 127.0.0.1. Re-check buttons, or saving a source file, re-scan only the affected pages. Proven fixes move to Done as you watch, new issues are flagged, and a fix that comes back is marked. Decisions are stored in `a11y.triage.json` for the team.
+- `A11Y_ONLY_PAGES` (JSON list of page names) limits a scan or `verify` to those pages; `A11Y_OPEN_REPORT=0` stops the report from opening.
+- `lib/priority.js` exports the scoring, for custom reporting.
+- **Commands** dialog on the dashboard and the fix plan: every command (re-scan, verify, lint, login, CI setup…) with a Copy button.
+- Accessible custom dropdowns (WAI-ARIA select-only combobox) replace the native selects in the reports.
+
+### Accuracy
+
+- One defect, one issue: a node that is "needs review" in one state and a violation in another is a violation; the tool's own checks are folded into the axe issue for the same element (`alsoFlaggedBy`); the contrast sampler replaces axe's undecided result instead of adding a second one.
+- Repeats across pages are counted once in `stats.unique` and shown as "N violations (M unique)"; `A11Y_GATE_UNIQUE=1` gates on that.
+- Headline numbers, health scores, charts and trends count confirmed WCAG violations only. Review items and best-practice findings are listed but shown separately; trends and Δ only compare scans of the same pages.
+- Best-practice axe rules are labelled as such and never count toward the CI gate.
+- A criterion whose rules were only inapplicable is no longer "Passed"; the status is renamed "No automated failures".
+- IBM Equal Access: recommendation-level rules are ignored, it no longer decides manual-only criteria, and an IBM-only failure is "needs review" (no element to act on).
+- 3.2.6 Consistent Help and 3.3.7 Redundant Entry are Level A.
+- JUnit: `tests=` matches the real number of cases; lint findings get their own suite.
+- A scan that could not reach any page exits with 2 (setup problem) instead of 1, so CI can tell "site down" from "issues found".
+- CI templates fail on confirmed critical violations by default; the scan warns in CI when no threshold is set; non-numeric thresholds (an unset Azure variable) no longer silently disable the gate.
+- Fix advice no longer names Bootstrap, `_Layout.cshtml` or jQuery for every project; stack-specific advice comes from the detected stack.

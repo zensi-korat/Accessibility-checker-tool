@@ -422,6 +422,22 @@ async function scanAll() {
     process.exitCode = 2;
     return;
   }
+  // A11Y_ONLY_PAGES: re-check just these pages (`a11y fix` sends it). A JSON
+  // array of page names, or of {name, path} — a quick scan has no PAGES list
+  // to filter, so it needs the paths and skips the crawl.
+  if (process.env.A11Y_ONLY_PAGES) {
+    let only = [];
+    try { only = JSON.parse(process.env.A11Y_ONLY_PAGES); } catch { log('  ⚠ A11Y_ONLY_PAGES is not valid JSON — ignored'); }
+    if (Array.isArray(only) && only.length) {
+      const names = new Set(only.map((p) => (typeof p === 'string' ? p : p && p.name)).filter(Boolean));
+      if (config._meta.quick) {
+        config.PAGES = only.filter((p) => p && typeof p === 'object' && p.name && p.path).map((p) => ({ name: p.name, path: p.path }));
+      } else if (!config.AUTO_EXPLORE) {
+        config.PAGES = config.PAGES.filter((p) => names.has(p.name));
+      }
+      log(`Re-checking ${config.AUTO_EXPLORE ? 'the crawl' : `${config.PAGES.length} page(s)`}: ${[...names].slice(0, 6).join(', ')}${names.size > 6 ? ', …' : ''}`);
+    }
+  }
   baseline = verify.loadBaseline(OUT_DIR, config.REPORT_NAME || '');
   let lintOnly = false;
   if (VERIFY) {
@@ -749,7 +765,7 @@ async function scanAll() {
     } else {
       log('\n✗ No pages were scanned — check BASE_URL and that the site is running.');
     }
-    process.exitCode = 1;
+    process.exitCode = 2; // a setup problem, not an accessibility result — CI can tell the two apart
     return;
   }
 

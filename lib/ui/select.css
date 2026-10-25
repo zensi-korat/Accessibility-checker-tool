@@ -1,0 +1,25 @@
+/* Accessible custom select (lib/ui/select.js). Self-contained: works in the dashboard and the fix plan. */
+.a11y-sel{position:relative;display:inline-block;min-width:170px;max-width:260px;vertical-align:middle;font-size:13px;line-height:1.3}
+.a11y-sel-native{position:absolute !important;width:1px !important;height:1px !important;padding:0 !important;margin:-1px !important;overflow:hidden !important;clip:rect(0,0,0,0) !important;white-space:nowrap !important;border:0 !important;opacity:0 !important;pointer-events:none !important}
+.a11y-sel-combo{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:36px;padding:7px 10px 7px 12px;border:1px solid #c9d0da;border-radius:8px;background:#fff;color:#1f2733;cursor:pointer;user-select:none;transition:border-color .15s,box-shadow .15s;box-sizing:border-box}
+.a11y-sel-combo:hover{border-color:#98a2b3}
+.a11y-sel-combo:focus-visible{outline:3px solid #1a6dd4;outline-offset:2px}
+.a11y-sel.is-open .a11y-sel-combo{border-color:#1a6dd4;box-shadow:0 0 0 3px rgba(26,109,212,.15)}
+.a11y-sel-combo[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+.a11y-sel-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.a11y-sel-caret{flex:none;color:#667085;transition:transform .15s}
+.a11y-sel.is-open .a11y-sel-caret{transform:rotate(180deg)}
+.a11y-sel-list{position:absolute;left:0;top:calc(100% + 6px);z-index:50;min-width:100%;width:max-content;max-width:min(360px,calc(100vw - 32px));max-height:280px;overflow-y:auto;margin:0;padding:6px;list-style:none;background:#fff;border:1px solid #e2e6ec;border-radius:10px;box-shadow:0 12px 32px rgba(16,24,40,.14);box-sizing:border-box;animation:a11y-sel-in .12s ease}
+.a11y-sel.is-up .a11y-sel-list{top:auto;bottom:calc(100% + 6px)}
+.a11y-sel-list[hidden]{display:none}
+.a11y-sel-list:focus{outline:none}
+.a11y-sel-opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;color:#1f2733;cursor:pointer;white-space:nowrap}
+.a11y-sel-opt.is-active{background:#eef4fb;color:#0b4a9e}
+.a11y-sel-opt[aria-selected="true"]{font-weight:600}
+.a11y-sel-opt[aria-disabled="true"]{color:#98a2b3;cursor:not-allowed}
+.a11y-sel-check{flex:none;color:#1a6dd4;visibility:hidden}
+.a11y-sel-opt[aria-selected="true"] .a11y-sel-check{visibility:visible}
+@keyframes a11y-sel-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.a11y-sel-list{animation:none}.a11y-sel-caret,.a11y-sel-combo{transition:none}}
+@media (forced-colors:active){.a11y-sel-opt.is-active{outline:2px solid Highlight}.a11y-sel-check{forced-color-adjust:auto}}
+@media (max-width:600px){.a11y-sel{max-width:100%}}

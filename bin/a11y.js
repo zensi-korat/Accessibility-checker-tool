@@ -12,6 +12,8 @@
  *   a11y scan <url> [--max-pages N]                quick scan of any URL, no config needed
  *   a11y lint [dir] [--strict] [--json]            accessibility lint of the source (no browser)
  *   a11y verify [--all]                            re-check the issues from the last scan after you fixed them
+ *   a11y fix [--no-watch] [--port N] [<url>]       live fix plan in the browser: issues in priority order,
+ *                                                  re-checked as you fix them (on save, or with one click)
  *   a11y login                                     log in once and save the session (for CI secrets)
  *   a11y render                                    rebuild reports from the last scan, no browser
  *   a11y combine                                   merge every archived run into one report + gate
@@ -35,7 +37,7 @@ const argv = process.argv.slice(2);
 const cmd = argv[0];
 const flag = (name) => argv.includes(name);
 const opt = (name) => { const i = argv.indexOf(name); return i > -1 ? argv[i + 1] : undefined; };
-const VALUE_FLAGS = ['--url', '--config', '--max-pages', '--ci'];
+const VALUE_FLAGS = ['--url', '--config', '--max-pages', '--ci', '--port'];
 const positional = () => argv.slice(1).find((a, i, all) => !a.startsWith('--') && !VALUE_FLAGS.includes(all[i - 1]));
 const log = (m = '') => process.stdout.write(m + '\n');
 
@@ -371,6 +373,12 @@ switch (cmd) {
   case 'scan': withBrowser('scan.js'); break;
   case 'login': withBrowser('scan.js', ['--login-only']); break;
   case 'verify': withBrowser('scan.js', ['--verify']); break;
+  case 'fix':
+    ensureBrowser().then((ok) => {
+      if (!ok) { process.exitCode = 2; return null; }
+      return require('../lib/fixServer').main(argv.slice(1));
+    }).catch((e) => { console.error(e); process.exitCode = 1; });
+    break;
   case 'lint': lint().catch((e) => { console.error(e); process.exitCode = 1; }); break;
   case 'render': passthrough('render.js'); break;
   case 'combine': passthrough('combine-reports.js'); break;

@@ -102,11 +102,16 @@ It also detects HTTP Basic/Windows authentication (it asks for credentials and k
 
 | File | What it is |
 |---|---|
-| `accessibility-report.html` | **Start here.** One self-contained file (dashboard + every issue + screenshots). Safe to email or attach to a ticket. |
+| `accessibility-report.html` | **Start here.** One self-contained file with three tabs (Dashboard, Fix plan, All findings) and embedded screenshots. Safe to email or attach to a ticket. |
+| `fix-plan.html` / `fix-plan.json` | The issues in the order to fix them; see [§6](#6-fixing-issues-and-checking-your-fixes). |
 | `dashboard.html` / `report.html` | The same as two linked pages. |
 | `report.json` | Machine-readable results (CI, scripts). |
 | `a11y-results.xml` | JUnit, one test per page, for CI test tabs. |
 | `reports/` | History of every run, used for trends and fix verification. Keep it between runs. |
+
+`a11y.triage.json` (next to your config, not in `a11y-report/`) holds the fix-plan decisions: in progress, snoozed, won't fix. Commit it.
+
+**Commands.** The **Commands** button on the dashboard and the fix plan lists every command (re-scan, verify, lint, login, CI setup…) with a Copy button. In the fix plan, press <kbd>c</kbd>.
 
 **WCAG criteria status.** All 56 WCAG 2.2 A/AA criteria are listed, each with one status:
 
@@ -137,7 +142,39 @@ It also detects HTTP Basic/Windows authentication (it asks for credentials and k
 **Report filters:** severity, violation vs. review, browser vs. source lint, and a per-page view on the dashboard.
 
 ## 6. Fixing issues and checking your fixes
-The loop is: **scan → fix → verify**.
+The loop is: **scan → fix → verify**. The easiest way to run it is the live fix plan.
+
+### The fix plan: what to fix first
+Every scan writes `a11y-report/fix-plan.html`. It is also the **Fix plan** tab in the single-file report, and the dashboard's **Where to start** panel links to it. Instead of one long list sorted by severity, it groups each unique defect into a tier:
+
+| Tier | What goes there |
+|---|---|
+| **Fix first** | Critical issues, and serious ones that block a group of people (no accessible name, unreachable by keyboard, no focus indicator) or appear on 3+ pages |
+| **Fix next** | Other serious failures, and moderate ones that still block someone (for example, zoom disabled) |
+| **Schedule** | Moderate and minor WCAG failures |
+| **Needs a decision** | The scanner couldn't decide; a person checks and fixes or dismisses each one |
+| **Can wait** | Best practice, not a WCAG failure |
+| **Done** | Proven fixed by a re-check |
+
+Within a tier, defects are ordered by impact, WCAG level (A before AA), how many pages they appear on, and a rough effort estimate. Every card says *why* it is ranked where it is ("Blocks screen-reader users · One fix clears 4 pages · Quick fix"). Fixes estimated at about 5 minutes in the top two tiers are marked **quick wins** and have their own filter. The same element on several pages is one card, because it is one fix.
+
+Each card has the fix advice for your stack, the source location (`file:line` with a confidence level), the affected elements with screenshots, and **Copy as ticket** (Markdown for Jira, GitHub or Azure Boards). You can mark a card **in progress**, **snooze** it, or set it aside as **won't fix** with a reason.
+
+### Live: watch issues tick off as you fix them
+```bash
+npx accessibility-check fix
+```
+This opens the fix plan in your browser at `http://127.0.0.1:4777` and keeps it current:
+- **Re-check** on a card (or **Re-check all open**) re-scans just the pages involved, the same way `verify` does. Fixed cards turn green and move to **Done**, the progress bar updates, and anything new is flagged.
+- **Save a file and it re-checks by itself** (needs `REPO_PATH` in the config). The pages whose issues point at that file are re-checked; a change nothing maps to, such as a stylesheet, re-checks every open page. Turn this off with `--no-watch`.
+- **Decisions are saved to `a11y.triage.json`** next to your config. Commit it so the team shares them. Snoozed items return on their own when the snooze ends.
+- If there is no scan yet, it runs one first (and asks you to log in if needed). With `WEB_SERVER` in the config, it starts your app once and keeps it running.
+
+Options: `--port N`, `--no-open`, `--no-watch`, or a URL for a project without a config (`npx accessibility-check fix https://staging.example.com`). The server listens on 127.0.0.1 only and accepts changes only from the page it served.
+
+Keyboard: <kbd>/</kbd> filter, <kbd>j</kbd>/<kbd>k</kbd> move between cards, <kbd>Enter</kbd> open, <kbd>r</kbd> re-check, <kbd>p</kbd> in progress, <kbd>?</kbd> help.
+
+### Without the live page
 
 ```bash
 npx accessibility-check scan      # find issues
@@ -331,6 +368,15 @@ e2e-report   report from sharded Playwright runs
 ```
 
 ## 13. Troubleshooting & FAQ
+
+**What do the exit codes mean?**
+`0`: done, gate passed. `1`: the build gate failed, or `verify` found issues still open. `2`: a setup problem (no config, the app wasn't reachable, a login is needed in CI, or nothing could be scanned). CI can tell "the site has issues" (1) from "the scan couldn't run" (2).
+
+**npm warns "eslint@9 … no longer supported" during install.**
+Expected. The React lint rules (`eslint-plugin-jsx-a11y`) don't support ESLint 10 yet, so the tool stays on ESLint 9 for now. It uses its own copy and doesn't touch your project's ESLint.
+
+**`npx a11y` runs a different tool.**
+`a11y` is a short alias that works once the package is installed (`npm i -D accessibility-check`). Without installing, use `npx accessibility-check`, because an unrelated npm package is already called `a11y`.
 **"Nothing to scan: PAGES is empty."**
 Run `discover` (or `discover --live`) and check `"include"` in `a11y.routes.json`, or add `PAGES`.
 

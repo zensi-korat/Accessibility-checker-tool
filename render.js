@@ -18,6 +18,7 @@ const { readPrevious, readHistory, syncCombinedShots } = require('./lib/archive'
 const { buildCombinedScans } = require('./lib/combine');
 const { writeSingleFile } = require('./lib/bundle');
 const { buildLifecycle } = require('./lib/lifecycle');
+const { writeFixPlan, renderFixPlan, triageFile } = require('./lib/fixPlan');
 
 const OUT_DIR = config.OUTPUT_DIR;
 const cacheFile = path.join(OUT_DIR, '.scan-cache.json');
@@ -54,13 +55,18 @@ try {
     };
     const combinedData = { ...c, meta: combinedMeta };
     try { combinedData.lifecycle = buildLifecycle(OUT_DIR, combinedData, {}); } catch (e) { /* non-fatal */ }
-    const built = writeReports(path.join(OUT_DIR, 'reports'), combinedData, { prefix: 'all-pages-dashboard,all-pages-report' });
+    const built = writeReports(path.join(OUT_DIR, 'reports'), combinedData, { prefix: 'all-pages-dashboard,all-pages-report', planHref: '../fix-plan.html' });
+    let planData = null;
+    try {
+      planData = writeFixPlan(OUT_DIR, c.issues, { meta: { reportName: meta.reportName, baseUrl: meta.baseUrl }, shotPrefix: 'reports/', triageFile: triageFile(config) });
+      console.log('  fix-plan.html');
+    } catch (e) { console.log('  ⚠ fix plan skipped:', e.message.split('\n')[0]); }
     // Combined report's <img> paths are relative, so they resolve to
     // reports/shots/ — assemble the union from every run's archived shots.
     const shots = syncCombinedShots(OUT_DIR);
     console.log(`  reports/all-pages-dashboard.html (${combined.sources.length} page(s) combined, ${shots.copied} screenshot(s))`);
     // ONE self-contained file — dashboard + findings + inlined screenshots.
-    const one = writeSingleFile(OUT_DIR, { dashboard: built.dashboard, report: built.report },
+    const one = writeSingleFile(OUT_DIR, { dashboard: built.dashboard, report: built.report, plan: planData && renderFixPlan(planData, { mode: 'bundle' }) },
       { shotRoots: [path.join(OUT_DIR, 'reports'), OUT_DIR], log: (m) => console.log(m) });
     fs.copyFileSync(one.file, path.join(OUT_DIR, 'reports', 'accessibility-report.html'));
     console.log(`  accessibility-report.html (${(one.bytes / 1e6).toFixed(1)} MB, self-contained)`);
