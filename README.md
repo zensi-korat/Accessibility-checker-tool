@@ -1,6 +1,5 @@
 # accessibility-check
 
-[![npm](https://img.shields.io/npm/v/accessibility-check.svg)](https://www.npmjs.com/package/accessibility-check)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![node >= 20](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)
 
@@ -12,14 +11,29 @@ WCAG 2.2 A + AA accessibility checks for **any web project**: React, Next.js, An
 - **Proves your fixes worked.** Re-checks say *fixed*, *still failing* or *new*, and never guess.
 - **Handles login screens**, and runs in CI with JUnit output and a build gate.
 
-```bash
-npx accessibility-check scan https://staging.example.com
-```
-No install and no config. It crawls up to 20 pages and opens the report.
+> **Not on the npm registry.** Install it straight from this GitHub repository, as shown below.
 
-## Requirements
-- Node.js 20 or newer.
-- On first run it offers to download Chromium (~150 MB), the browser it scans with.
+## Before you start
+- **Node.js 20 or newer.** Check with `node -v`.
+- **Git installed** (`git --version`). npm uses it to download the tool from GitHub. No GitHub account or sign-in is needed.
+- About 150 MB of disk space. On first run the tool offers to download Chromium, the browser it scans with.
+
+You don't need to clone this repository; npm fetches it for you.
+
+## Install
+In **your project's** root folder (the app you want to check):
+```bash
+npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git
+```
+This adds `accessibility-check` to your project's `devDependencies`. Teammates on that project then get it with a normal `npm install`.
+
+> Install first. Until it is installed in the project, `npx accessibility-check` looks on the public npm registry, where this tool doesn't exist.
+
+**Just trying it?** Scan any site without adding anything to a project:
+```bash
+npx github:zensi-korat/Accessibility-checker-tool scan https://staging.example.com
+```
+It crawls up to 20 pages and opens the report.
 
 ## Use it in your project
 ```bash
@@ -28,7 +42,20 @@ npx accessibility-check scan      # start the app, scan every page + lint the so
 npx accessibility-check fix       # live fix plan: issues tick off as you fix them
 npx accessibility-check verify    # re-check: ✔ fixed · ✗ still failing · ⚠ new · ? couldn't verify
 ```
-To pin the version and skip the download on every run, install it as a dev dependency: `npm i -D accessibility-check`.
+
+## Updating
+```bash
+npm update accessibility-check
+```
+This pulls the latest version from the repository. When releases are tagged, you can stay on one by adding the tag to the install URL, for example `npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git#v0.1.0`.
+
+## If installing fails
+| Message | Fix |
+|---|---|
+| `spawn git ENOENT` / `git: command not found` | Git isn't installed. Install it from [git-scm.com](https://git-scm.com/) and try again. |
+| `404 Not Found … accessibility-check` | You ran `npx accessibility-check` before installing. Run the install command first. |
+| `Unsupported engine` / `requires node >= 20` | Update Node.js to version 20 or newer. |
+| `npm warn deprecated eslint@9…` | Expected and harmless. The tool stays on ESLint 9 until its React lint rules support ESLint 10. |
 
 ## Commands
 | Command | What it does |
@@ -78,6 +105,8 @@ Every option is described in the [configuration reference](docs/GUIDE.md#12-conf
 npx accessibility-check init --ci github   # or azure, gitlab
 ```
 This adds a pipeline that scans every pull request, publishes the report and JUnit results, and fails on confirmed critical violations. Thresholds are set with `A11Y_FAIL_ON_CRITICAL`, `A11Y_FAIL_ON_SERIOUS` or `A11Y_FAIL_ON_TOTAL`. Only confirmed WCAG violations count: "needs review" and best-practice findings never fail a build.
+
+> **Install step:** the generated pipeline installs `accessibility-check@0` from the npm registry, where this tool isn't published. In the generated file, replace `accessibility-check@0` with `git+https://github.com/zensi-korat/Accessibility-checker-tool.git`. No token is needed, because the repository is public.
 
 Exit codes: `0` passed · `1` gate failed, or `verify` found issues still open · `2` setup problem (no config, app not reachable, login needed).
 

@@ -31,14 +31,22 @@ Both feed one report. Each issue is mapped to a WCAG success criterion and comes
 ## 1. Requirements
 - **Node.js 20 or newer** (`node -v`).
 - About 150 MB for the Chromium browser. The first scan offers to download it, or run `npx playwright install chromium` yourself.
-- Nothing has to be added to your project's `package.json`. `npx` downloads the tool on demand.
+- **Git installed** (`git --version`). The tool is installed straight from its public GitHub repository, not from the npm registry. No GitHub account or sign-in is needed.
 
-The commands below use `npx accessibility-check …`. If you install it globally (`npm i -g accessibility-check`), the short name `a11y …` works too.
+**Install it in your project** (from the project's root folder):
+```bash
+npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git
+```
+To update later, run `npm update accessibility-check`.
+
+The commands below use `npx accessibility-check …`, which runs the installed copy. Install first: without the install, `npx accessibility-check` looks on the public npm registry, where this tool doesn't exist. Once installed, the short name `npx a11y …` works too.
 
 ## 2. Quick scan of any URL
+To try it without installing anything into a project:
 ```bash
-npx accessibility-check scan https://staging.example.com
+npx github:zensi-korat/Accessibility-checker-tool scan https://staging.example.com
 ```
+In a project where it is installed, `npx accessibility-check scan https://staging.example.com` does the same.
 - It crawls the site read-only, scans up to 20 pages (`--max-pages 50` for more) and writes `./a11y-report/`.
 - It opens `a11y-report/accessibility-report.html` when done. This single file is the one to share.
 - If the site has a login screen, it asks how you want to log in (see [§4](#4-logging-in)).
@@ -275,6 +283,8 @@ This writes a pipeline that, on every PR and on a weekly schedule:
 4. Publishes `accessibility-report.html` plus per-page JUnit results.
 5. Fails the build when thresholds are exceeded.
 
+> **Install step:** the generated pipeline installs `accessibility-check@0` from the npm registry, where this tool isn't published. In the generated file, replace `accessibility-check@0` with `git+https://github.com/zensi-korat/Accessibility-checker-tool.git`. No token is needed, because the repository is public.
+
 **Settings (CI variables / secrets):**
 
 | Name | Use |
@@ -306,7 +316,7 @@ const r = await a11y.check('Add user dialog');
 // playwright.config.ts
 reporter: [['list'], ['accessibility-check/playwright/reporter', { failOnGate: false }]],
 ```
-`accessibility-check` must be a dev dependency for this (`npm i -D accessibility-check`).
+`accessibility-check` must be a dev dependency for this (`npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git`).
 
 How the results are handled:
 - Results are named after the matching route and merge into the same report.
@@ -376,7 +386,7 @@ e2e-report   report from sharded Playwright runs
 Expected. The React lint rules (`eslint-plugin-jsx-a11y`) don't support ESLint 10 yet, so the tool stays on ESLint 9 for now. It uses its own copy and doesn't touch your project's ESLint.
 
 **`npx a11y` runs a different tool.**
-`a11y` is a short alias that works once the package is installed (`npm i -D accessibility-check`). Without installing, use `npx accessibility-check`, because an unrelated npm package is already called `a11y`.
+`a11y` is a short alias that works once the tool is installed in your project (see [§1](#1-requirements)). Without the install, npx looks on the public npm registry, where `a11y` is an unrelated package and `accessibility-check` doesn't exist. Install first.
 **"Nothing to scan: PAGES is empty."**
 Run `discover` (or `discover --live`) and check `"include"` in `a11y.routes.json`, or add `PAGES`.
 
