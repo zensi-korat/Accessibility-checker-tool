@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — accuracy
+
+- One defect, one issue: a node that is "needs review" in one state and a violation in another is a violation; the tool's own checks are folded into the axe issue for the same element (`alsoFlaggedBy`); the contrast sampler replaces axe's undecided result instead of adding a second one.
+- Repeats across pages are counted once in `stats.unique` and shown as "N violations (M unique)"; `A11Y_GATE_UNIQUE=1` gates on that.
+- Headline numbers, health scores, charts and trends count confirmed WCAG violations only. Review items and best-practice findings are listed but shown separately; trends and Δ only compare scans of the same pages.
+- Best-practice axe rules are labelled as such and never count toward the CI gate.
+- A criterion whose rules were only inapplicable is no longer "Passed"; the status is renamed "No automated failures".
+- IBM Equal Access: recommendation-level rules are ignored, it no longer decides manual-only criteria, and an IBM-only failure is "needs review" (no element to act on).
+- 3.2.6 Consistent Help and 3.3.7 Redundant Entry are Level A.
+- JUnit: `tests=` matches the real number of cases; lint findings get their own suite.
+- CI templates fail on confirmed critical violations by default; the scan warns in CI when no threshold is set; non-numeric thresholds (an unset Azure variable) no longer silently disable the gate.
+- Fix advice no longer names Bootstrap, `_Layout.cshtml` or jQuery for every project; stack-specific advice comes from the detected stack.
+
 ## 0.1.0 — first public release
 
 - `scan` — WCAG 2.2 A + AA scan of the running app with Playwright (axe-core + IBM Equal Access), including modals, tabs and other revealed states.

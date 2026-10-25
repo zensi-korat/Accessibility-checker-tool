@@ -58,9 +58,15 @@ const check = (ok, msg) => { console.log((ok ? '  ok   ' : '  FAIL ') + msg); if
       'Step 2': { path: '/manage/onboarding/contact', fields: [{ id: 'ac:email', sel: '#e2', prefilled: false }] },
       'Elsewhere': { path: '/manage/reports/list', fields: [{ id: 'ac:email', sel: '#e3', prefilled: false }] },
     });
-    check(!!out['Step 2'], 'email asked again at step 2 of the same flow is flagged');
+    check(!!out['Step 2'] && out['Step 2'].incomplete.length && !out['Step 2'].violations.length,
+      'undeclared: email asked again under the same path prefix is a review item, not a failure');
     check(!out['Elsewhere'], '  a different section is NOT treated as the same process');
     check(!out['Step 1'], '  the first request is not itself a violation');
+    const declared = evaluateFlowAcrossPages({
+      'Step 1': { path: '/manage/onboarding/details', fields: [{ id: 'ac:email', sel: '#e', prefilled: false }] },
+      'Step 2': { path: '/manage/onboarding/contact', fields: [{ id: 'ac:email', sel: '#e2', prefilled: false }] },
+    }, { flows: [{ name: 'Onboarding', pattern: '^/manage/onboarding/' }] });
+    check(declared['Step 2'] && declared['Step 2'].violations.length === 1, 'declared flow: the repeat is a confirmed failure');
   }
   {
     const out = evaluateFlowAcrossPages({
@@ -68,6 +74,20 @@ const check = (ok, msg) => { console.log((ok ? '  ok   ' : '  FAIL ') + msg); if
       'Step 2': { path: '/manage/onboarding/contact', fields: [{ id: 'ac:email', sel: '#e2', prefilled: true }] },
     });
     check(!out['Step 2'], 'a PRE-FILLED repeat is not a violation');
+  }
+
+  console.log('\n3.3.7 — repeats that are not redundant entry');
+  {
+    const p = await ctx.newPage();
+    await p.setContent(`<header><form role="search"><input type="search" aria-label="Search"></form></header>
+      <main><form id="login"><label for="le">Email</label><input id="le" type="email"><label for="lp">Password</label><input id="lp" type="password"></form>
+      <form id="reg"><label for="re">Email</label><input id="re" type="email"><label for="rp">Password</label><input id="rp" type="password"></form>
+      <form id="search2"><input type="search" aria-label="Search"></form>
+      <form id="cart"><label>Quantity <input id="q1"></label><label>Quantity <input id="q2"></label></form></main>`);
+    const r = await formFlowChecks(p);
+    check(!r.violations.some((x) => x.id === 'ff-redundant-entry'),
+      'login + register forms, two search boxes and per-row quantities are not redundant entry');
+    await p.close();
   }
 
   console.log('\n3.3.4 Error Prevention — declared flows');

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Focus to first invalid field</title></head>
+<body>
+  <h1>Sign up</h1>
+  <form id="f" action="/signup" method="post">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" required aria-describedby="email-msg">
+    <!-- the describedby target is a WRAPPER; the message is rendered inside it -->
+    <div id="email-msg"></div>
+    <button type="submit">Sign up</button>
+  </form>
+  <script>
+    document.getElementById('f').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = document.getElementById('email');
+      if (!input.value) {
+        document.getElementById('email-msg').innerHTML = '<p class="error">Email is required</p>';
+        input.setAttribute('aria-invalid', 'true');
+        input.focus();   // react-hook-form / Formik default
+      }
+    });
+  </script>
+</body></html>

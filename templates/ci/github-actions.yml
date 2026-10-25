@@ -5,8 +5,10 @@
 #   secret    A11Y_STORAGE_STATE_B64  or a saved session (SSO / MFA): run `npx accessibility-check login`
 #                                     locally and paste the base64 it prints
 #   variable  A11Y_PUBLIC_ONLY = 1    or scan only the pages that need no login
-# Optional:
-#   variable  A11Y_FAIL_ON_CRITICAL / A11Y_FAIL_ON_SERIOUS  build-failure thresholds
+# Build gate (confirmed WCAG violations only; review items and best-practice findings never fail it):
+#   variable  A11Y_FAIL_ON_CRITICAL   default 0 — any confirmed critical violation fails the build
+#   variable  A11Y_FAIL_ON_SERIOUS    unset by default — set e.g. 0 once the backlog is cleared
+#   variable  A11Y_GATE_UNIQUE = 1    count a defect repeated on many pages once
 #
 # The app is started by WEB_SERVER in a11y.config.js. Reports are uploaded as
 # the "accessibility-report" artifact; open accessibility-report.html.
@@ -58,8 +60,9 @@ jobs:
           A11Y_STORAGE_STATE_B64: ${{ secrets.A11Y_STORAGE_STATE_B64 }}
           A11Y_USER: ${{ secrets.A11Y_USER }}
           A11Y_PASS: ${{ secrets.A11Y_PASS }}
-          A11Y_FAIL_ON_CRITICAL: ${{ vars.A11Y_FAIL_ON_CRITICAL }}
+          A11Y_FAIL_ON_CRITICAL: ${{ vars.A11Y_FAIL_ON_CRITICAL || '0' }}
           A11Y_FAIL_ON_SERIOUS: ${{ vars.A11Y_FAIL_ON_SERIOUS }}
+          A11Y_GATE_UNIQUE: ${{ vars.A11Y_GATE_UNIQUE }}
 
       - name: Save scan history
         if: always()

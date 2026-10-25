@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><title>Non-text contrast</title>
 <style>
   body { background:#ffffff; }
-  /* 1.6:1 border on white — fails */
+  /* 1.6:1 border on white — fails (a text field needs its boundary) */
   #faint  { border:1px solid #e0e0e0; background:#ffffff; }
   /* ~5.7:1 border on white — passes */
   #strong { border:1px solid #767676; background:#ffffff; }
@@ -15,12 +15,25 @@
   /* sits on a gradient: unresolvable from CSS, must be review */
   .grad   { background:linear-gradient(90deg,#333,#ddd); padding:10px; }
   #onimg  { border:1px solid #888888; background:transparent; }
+  /* Material-style: bottom border only. Dark → passes, faint → fails */
+  #under  { border:0; border-bottom:1px solid #555; background:transparent; }
+  #underfaint { border:0; border-bottom:1px solid #eee; background:transparent; }
+  /* text buttons are identified by their text, not a boundary (Bootstrap .btn-light) */
+  #btnlight { background:#f8f9fa; border:1px solid #f8f9fa; color:#212529; }
+  /* dark backdrop is a positioned SIBLING, not an ancestor → review, not 1.00:1 */
+  .hero { position:relative; padding:20px; }
+  .hero .bg { position:absolute; inset:0; background:#111; z-index:-1; }
+  #onhero { border:2px solid #fff; background:transparent; color:#fff; }
 </style></head>
 <body>
-  <button id="faint">Faint</button>
-  <button id="strong">Strong</button>
-  <button id="ghost">Ghost</button>
-  <button id="filled">Filled</button>
-  <button id="off" disabled>Disabled</button>
-  <div class="grad"><button id="onimg">On gradient</button></div>
+  <input id="faint" aria-label="Faint">
+  <input id="strong" aria-label="Strong">
+  <input id="ghost" aria-label="Ghost">
+  <input id="filled" aria-label="Filled">
+  <input id="off" aria-label="Disabled" disabled>
+  <div class="grad"><input id="onimg" aria-label="On gradient"></div>
+  <input id="under" aria-label="Underlined">
+  <input id="underfaint" aria-label="Faint underline">
+  <button id="btnlight">Cancel</button>
+  <div class="hero"><div class="bg"></div><input id="onhero" aria-label="Email"></div>
 </body></html>

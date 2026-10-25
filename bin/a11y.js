@@ -50,8 +50,18 @@ function readText(f) { try { return fs.readFileSync(f, 'utf8'); } catch { return
 function guessBaseUrl(stacks) {
   for (const s of stacks) {
     const pkg = readText(path.join(s.root, 'package.json'));
-    const port = (pkg.match(/(?:--port[ =]|-p\s+)(\d{2,5})/) || [])[1];
-    if (port) return `http://localhost:${port}`;
+    let scripts = {};
+    try { scripts = JSON.parse(pkg).scripts || {}; } catch { /* none */ }
+    // The script guessWebServer will run says more than the package as a whole.
+    const cmd = scripts.dev || scripts.start || scripts.serve || pkg;
+    const port = (cmd.match(/(?:--port[ =]|-p\s+)(\d{2,5})/) || [])[1];
+    const host = (cmd.match(/(?:--hostname|--host|-H)[ =]([A-Za-z0-9.-]+)/) || [])[1];
+    const https = /--(?:experimental-)?https\b|--ssl\b/.test(cmd);
+    if (port || host || https) {
+      const h = !host || host === '0.0.0.0' || host === '::' ? 'localhost' : host;
+      const p = port || (s.id === 'angular' ? '4200' : /"vite"/.test(pkg) && s.id !== 'next' ? '5173' : '3000');
+      return `${https ? 'https' : 'http'}://${h}:${p}`;
+    }
     if (s.id === 'next') return 'http://localhost:3000';
     if (s.id === 'angular') return 'http://localhost:4200';
     if (s.id === 'react') return /"vite"/.test(pkg) ? 'http://localhost:5173' : 'http://localhost:3000';
@@ -232,7 +242,7 @@ async function discover({ quietHeader } = {}) {
     const { discoverLive, applyLive } = require('../lib/routes/live');
     const { mergeDefaults } = require('../lib/config/load');
     const liveConfig = config || { ...mergeDefaults({}), BASE_URL: baseUrl };
-    liveConfig.BASE_URL = baseUrl;
+    liveConfig.BASE_URL = require('../lib/routes/live').splitStartUrl(baseUrl).base;
     if (!(await ensureBrowser())) { process.exitCode = 2; return; }
     log(`\nReading the live site at ${baseUrl} (read-only: links are followed, nothing is clicked or submitted)…`);
     let liveRes, server;
@@ -295,7 +305,7 @@ async function lint() {
   }
   stacks = stacks && stacks.length ? stacks : detectStacks(root).map((s) => s.id);
   const res = await lintProject(root, stacks, opts);
-  if (flag('--json')) { log(JSON.stringify(res.findings.map(({ abs, mapping, ...f }) => ({ ...f, wcag: mapping.sc, confidence: mapping.conf, impact: mapping.impact })), null, 2)); }
+  if (flag('--json')) { log(JSON.stringify(res.findings.map(({ abs, mapping, ...f }) => ({ ...f, wcag: mapping.sc, bestPractice: !!mapping.bp, confidence: mapping.conf, impact: mapping.impact })), null, 2)); }
   else {
     log(`Accessibility lint — ${root}${stacks.length ? `  (${stacks.join(', ')})` : ''}`);
     const byFile = new Map();
@@ -303,7 +313,7 @@ async function lint() {
     for (const [file, list] of byFile) {
       log(`\n${file}`);
       for (const f of list.sort((a, b) => a.line - b.line)) {
-        log(`  ${String(f.line).padStart(4)}:${String(f.column).padEnd(3)} ${f.mapping.conf === 'high' ? '✗' : '?'} ${f.mapping.sc.join(',').padEnd(13)} ${f.message}  (${f.ruleId})`);
+        log(`  ${String(f.line).padStart(4)}:${String(f.column).padEnd(3)} ${f.mapping.conf === 'high' ? '✗' : '?'} ${(f.mapping.bp ? 'best-practice' : f.mapping.sc.join(',')).padEnd(13)} ${f.message}  (${f.ruleId})`);
       }
     }
     for (const u of res.unparsed) log(`\n⚠ ${u.file}: could not parse (${u.message.split('\n')[0]})`);

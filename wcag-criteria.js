@@ -28,7 +28,7 @@ const CRITERIA = [
   { id: '1.2.5', tag: 'wcag125', requires: 'media', name: 'Audio Description (Prerecorded)', level: 'AA', principle: P.PERCEIVABLE, auto: false,
     manualHint: 'Prerecorded video needs an audio description track.' },
   { id: '1.3.1', tag: 'wcag131', name: 'Info and Relationships', level: 'A', principle: P.PERCEIVABLE, auto: true,
-    manualHint: 'Structure conveyed visually (headings, tables, lists, labels) must exist in markup. Watch Bootstrap <div class="row"> tables and fake headings.' },
+    manualHint: 'Structure conveyed visually (headings, tables, lists, labels) must exist in markup. Watch for grid/div layouts used as data tables and styled text used as fake headings.' },
   { id: '1.3.2', tag: 'wcag132', name: 'Meaningful Sequence', level: 'A', principle: P.PERCEIVABLE, auto: true,
     manualHint: 'Reading/tab order in DOM must match the visual order; beware CSS float/flex reordering.' },
   { id: '1.3.3', tag: 'wcag133', name: 'Sensory Characteristics', level: 'A', principle: P.PERCEIVABLE, auto: false,
@@ -73,7 +73,7 @@ const CRITERIA = [
       "If the image cannot be replaced right now, confirm its alt attribute carries the FULL text verbatim \u2014 that is a stopgap for screen readers, not a fix for 1.4.5 (a sighted low-vision user still cannot resize or recolour it).",
     ] },
   { id: '1.4.10', tag: 'wcag1410', name: 'Reflow', level: 'AA', principle: P.PERCEIVABLE, auto: true,
-    manualHint: 'At 320px width / 400% zoom, no horizontal scrolling. Legacy Bootstrap fixed-width tables often fail. lib/viewport.js measures this and names the widest offending container.' },
+    manualHint: 'At 320px width / 400% zoom, no horizontal scrolling. Fixed-width tables and layouts often fail. lib/viewport.js measures this and names the widest offending container.' },
   { id: '1.4.11', tag: 'wcag1411', name: 'Non-text Contrast', level: 'AA', principle: P.PERCEIVABLE, auto: true,
     manualHint: 'UI components (input borders, buttons, focus rings, icons) need ≥ 3:1 contrast against adjacent colors.',
     manualSteps: [
@@ -86,7 +86,7 @@ const CRITERIA = [
   { id: '1.4.12', tag: 'wcag1412', name: 'Text Spacing', level: 'AA', principle: P.PERCEIVABLE, auto: true,
     manualHint: 'Content must survive increased line/letter/word/paragraph spacing without clipping. lib/viewport.js injects the spec\'s exact metrics and reports newly clipped text.' },
   { id: '1.4.13', tag: 'wcag1413', name: 'Content on Hover or Focus', level: 'AA', principle: P.PERCEIVABLE, auto: true,
-    manualHint: 'Tooltips/popovers must be dismissable, hoverable, and persistent. Check Bootstrap tooltips/popovers. lib/contextChange.js flags native title tooltips outright and tests scripted ones for Dismissable and Persistent.' },
+    manualHint: 'Tooltips/popovers must be dismissable, hoverable, and persistent. Check every tooltip/popover component. lib/contextChange.js tests scripted tooltips for Dismissable and Persistent; native browser title tooltips are exempt.' },
 
   // ── 2. Operable ───────────────────────────────────────────────────────────
   { id: '2.1.1', tag: 'wcag211', name: 'Keyboard', level: 'A', principle: P.OPERABLE, auto: true,
@@ -159,7 +159,7 @@ const CRITERIA = [
   { id: '2.5.7', tag: 'wcag257', name: 'Dragging Movements', level: 'AA', principle: P.OPERABLE, auto: false,
     manualHint: 'Any drag operation needs a single-tap/click alternative (reorder, sliders).',
     manualSteps: [
-      "Find every drag-and-drop interaction (the tool flags draggable elements and drag listeners). On this product the VPAT specifically names reordering.",
+      "Find every drag-and-drop interaction (the tool flags draggable elements and drag listeners).Reordering lists, kanban boards, sliders and map panning are the usual cases.",
       "For each, try to achieve the same result WITHOUT dragging \u2014 using only clicks or keyboard.",
       "Where there is no alternative, add one: 'Move up' / 'Move down' buttons on each row, or a 'Move to position\u2026' number input.",
       "The alternative must be operable by keyboard alone; verify by Tabbing to it and pressing Enter.",
@@ -181,7 +181,7 @@ const CRITERIA = [
     manualHint: 'Navigation must appear in the same relative order across pages. lib/consistency.js compares nav order across pages and flags the deviating page.' },
   { id: '3.2.4', tag: 'wcag324', name: 'Consistent Identification', level: 'AA', principle: P.UNDERSTANDABLE, auto: true,
     manualHint: 'Components with the same function are labeled consistently across pages. lib/consistency.js flags a destination labelled differently from the majority of pages.' },
-  { id: '3.2.6', tag: 'wcag326', name: 'Consistent Help', level: 'AA', principle: P.UNDERSTANDABLE, auto: true,
+  { id: '3.2.6', tag: 'wcag326', name: 'Consistent Help', level: 'A', principle: P.UNDERSTANDABLE, auto: true,
     manualHint: 'Help mechanisms (contact, chat) appear in a consistent location across pages. lib/consistency.js flags a page with no help mechanism when most pages have one.' },
   { id: '3.3.1', tag: 'wcag331', name: 'Error Identification', level: 'A', principle: P.UNDERSTANDABLE, auto: true,
     manualHint: 'Form errors must be described in text, not color alone, and identify the field. lib/liveRegion.js submits invalid forms and checks each message is linked to its field via aria-describedby/aria-errormessage.' },
@@ -200,16 +200,16 @@ const CRITERIA = [
   { id: '3.3.4', tag: 'wcag334', name: 'Error Prevention (Legal, Financial, Data)', level: 'AA', principle: P.UNDERSTANDABLE, auto: true,
     manualHint: 'Submissions with legal/financial impact must be reversible, checked, or confirmable. lib/formFlow.js asserts a confirmation/review/undo exists on every page declared in config.CONSEQUENTIAL_FLOWS. Declare the flows once; the check runs forever.',
     manualSteps: [
-      "List the flows that are legal, financial, or that modify/delete user-controlled data \u2014 for this product: payroll submission, timesheet approval, shift deletion, staff record deletion, billing changes.",
+      "List the flows that are legal, financial, or that modify/delete user-controlled data \u2014 for example payments, purchases, account or record deletion, legal agreements, submitting test answers.",
       "For each flow, confirm at least ONE of: the action is reversible (undo); the data is checked and the user can correct errors; or a confirmation step lets the user review and confirm before it commits.",
       "Test by starting the flow and looking for the review/confirm step. A browser 'are you sure?' alert counts only if it states WHAT is about to happen.",
       "Where none of the three exist, add a confirmation screen that summarises the change before committing.",
       "Record the flow list in config as the declared set so the tool can assert against it on every future run.",
     ] },
-  { id: '3.3.7', tag: 'wcag337', name: 'Redundant Entry', level: 'AA', principle: P.UNDERSTANDABLE, auto: true,
+  { id: '3.3.7', tag: 'wcag337', name: 'Redundant Entry', level: 'A', principle: P.UNDERSTANDABLE, auto: true,
     manualHint: 'Do not force users to re-enter info already provided in the same process. lib/formFlow.js matches field identities (autocomplete token or label) within a page and across steps of one path prefix, ignoring deliberate "confirm/re-enter" repeats.',
     manualSteps: [
-      "Walk each multi-step flow end to end: new employee onboarding, multi-step scheduling, checkout-style wizards.",
+      "Walk each multi-step flow end to end: sign-up, checkout, multi-step applications and other wizards.",
       "Note every piece of information the user is asked for more than once in the same process.",
       "Repeated entry is allowed only when it is essential (confirming a password), the information has changed, or the earlier value is no longer valid.",
       "Otherwise auto-populate the later field, or offer a 'same as above' checkbox / a chooser of previously-entered values.",
@@ -220,7 +220,7 @@ const CRITERIA = [
       "At the login screen, try to PASTE a password from a password manager into the field. If paste is blocked, that is a failure.",
       "Confirm the password field has autocomplete=\"current-password\" so managers can fill it.",
       "Check no step requires the user to transcribe, solve a puzzle, or recognise objects/images (a traditional CAPTCHA fails unless a non-cognitive alternative exists).",
-      "For this product, review the SMS MFA step: confirm the code can be pasted, and that it is not the only route (an authenticator app or backup codes satisfy the criterion more robustly).",
+      "Review any one-time-code / MFA step: confirm the code can be pasted, and that it is not the only route (an authenticator app or backup codes satisfy the criterion more robustly).",
       "Exception: a cognitive test is allowed if an alternative authentication method is offered, or a mechanism helps the user complete it.",
     ] },
 

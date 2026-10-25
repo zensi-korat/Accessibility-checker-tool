@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Inbox</title></head>
+<body>
+  <h1>Patterns that are not a change of context</h1>
+  <a href="#a">One</a> <a href="#b">Two</a> <a href="#c">Three</a> <a href="#d">Four</a>
+  <!-- Next.js-style filter: writes ?sort= without navigating -->
+  <label for="dept">Sort</label>
+  <select id="dept" onchange="history.replaceState(null, '', '?sort=' + this.value)">
+    <option value="a">Newest</option>
+    <option value="b">Oldest</option>
+  </select>
+  <button id="tip" title="Settings">Settings</button>
+  <div id="cookie" role="dialog" aria-label="Cookie consent" style="display:none">We use cookies. <button>OK</button></div>
+  <script>
+    // Cookie banner arrives late, on a timer; an unread counter ticks the title.
+    setTimeout(function () { document.getElementById('cookie').style.display = 'block'; }, 300);
+    var n = 0; setInterval(function () { n++; document.title = '(' + n + ') Inbox'; }, 250);
+  </script>
+</body></html>

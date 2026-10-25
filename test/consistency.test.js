@@ -75,8 +75,22 @@ console.log('\n3.2.6 Consistent Help');
     c: sig({ nav: STD, hasNav: true, help: h }),
     d: sig({ nav: STD, hasNav: true, help: [] }),
   });
-  check(ids(out.d, 'violations').includes('con-help-missing'), 'the page missing help is flagged');
+  check(!ids(out.d, 'violations').includes('con-help-missing'),
+    'a page WITHOUT help is not a failure (3.2.6 only governs the order of help that is present)');
   check(ids(out.a, 'passes').includes('con-help-missing'), '  pages with help pass');
+}
+
+console.log('\n3.2.6 — help moved to a different block / order is flagged');
+{
+  const h = [{ name: 'Help', path: '/help', region: 'header' }, { name: 'Contact', path: '/contact', region: 'header' }];
+  const out = evaluateConsistency({
+    a: sig({ help: h }), b: sig({ help: h }), c: sig({ help: h }),
+    d: sig({ help: [{ name: 'Contact', path: '/contact', region: 'header' }, { name: 'Help', path: '/help', region: 'header' }] }),
+    e: sig({ help: [{ name: 'Help', path: '/help', region: 'footer' }, { name: 'Contact', path: '/contact', region: 'header' }] }),
+  });
+  check(ids(out.d, 'violations').includes('con-help-missing'), 'swapped help order is flagged');
+  check(ids(out.e, 'violations').includes('con-help-missing'), 'help moved from header to footer is flagged');
+  check(!ids(out.a, 'violations').includes('con-help-missing'), '  majority pages pass');
 }
 
 console.log('\n3.2.6 — a site with no help anywhere is not a violation');
@@ -94,13 +108,36 @@ console.log('\n2.4.5 Multiple Ways');
   const one = evaluateConsistency({
     a: sig({ nav: STD, hasNav: true }), b: sig({ nav: STD, hasNav: true }), c: sig({ nav: STD, hasNav: true }),
   });
-  check(ids(one.a, 'violations').includes('con-multiple-ways'), 'nav alone is only one way — flagged');
+  check(ids(one.a, 'incomplete').includes('con-multiple-ways') && !ids(one.a, 'violations').includes('con-multiple-ways'),
+    'nav alone is only one way — review (unscanned pages may offer another), not a failure');
   const two = evaluateConsistency({
     a: sig({ nav: STD, hasNav: true, hasSearch: true }),
     b: sig({ nav: STD, hasNav: true }), c: sig({ nav: STD, hasNav: true }),
   });
   check(ids(two.a, 'passes').includes('con-multiple-ways'), 'nav + search passes, site-wide');
   check(ids(two.c, 'passes').includes('con-multiple-ways'), '  reported on every page, not just the one with search');
+}
+
+console.log('\n3.2.4 — patterns that are NOT inconsistent');
+{
+  const logoHome = navOf(['/', 'Acme'], ['/', 'Home'], ['/staff', 'Staff'], ['/reports', 'Reports']).map((n, i) => ({ ...n, slot: i === 1 ? 2 : 1 }));
+  const cur = (name) => logoHome.map((n) => (n.path === '/staff' ? { ...n, name } : n));
+  const out = evaluateConsistency({
+    a: sig({ nav: logoHome, hasNav: true }),
+    b: sig({ nav: cur('Staff (current)'), hasNav: true }),
+    c: sig({ nav: cur('Staff 3'), hasNav: true }),
+    d: sig({ nav: logoHome, hasNav: true }),
+  });
+  for (const p of ['a', 'b', 'c', 'd']) {
+    check(!ids(out[p], 'violations').includes('con-identification') && !ids(out[p], 'incomplete').includes('con-identification'),
+      `page ${p}: logo + "Home" to "/", "(current)" and counts are not inconsistencies`);
+  }
+  const drift = evaluateConsistency({
+    a: sig({ nav: STD, hasNav: true }), b: sig({ nav: STD, hasNav: true }), c: sig({ nav: STD, hasNav: true }),
+    d: sig({ nav: navOf(['/home', 'Home'], ['/staff', 'Staff'], ['/reports', 'All reports']), hasNav: true }),
+  });
+  check(ids(drift.d, 'incomplete').includes('con-identification') && !ids(drift.d, 'violations').includes('con-identification'),
+    '"Reports" vs "All reports" is a review item, not a failure');
 }
 
 console.log('\ntoo few pages to judge');
@@ -128,6 +165,11 @@ console.log('\ntoo few pages to judge');
   check(s.nav[0].name === 'Home' && s.nav[0].path === '/home', '  first item is Home -> /home');
   check(s.hasSearch === true, 'search field detected');
   check(s.help.length > 0, 'help mechanism detected');
+  await page.setContent(`<header><nav><a href="/a">A</a><a href="/b">B</a><a href="/c">C</a></nav></header>
+    <main><input name="searchTable" placeholder="Search rows"><p><a href="/contact">Contact us</a> about this article.</p></main>`);
+  const s2 = await collectSignature(page);
+  check(s2.hasSearch === false, 'a table filter input in main is not site search');
+  check(s2.help.length === 0, 'a "Contact" link inside page content is not a repeated help mechanism');
   await browser.close();
   server.close();
 

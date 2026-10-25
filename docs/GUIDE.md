@@ -114,15 +114,16 @@ It also detects HTTP Basic/Windows authentication (it asks for credentials and k
 |---|---|---|
 | **Failed** | At least one confirmed violation. | Fix the listed issues. |
 | **Needs review** | The engine found something it couldn't decide, e.g. contrast over an image, or a lint heuristic on a custom component. | A person checks it; often real, sometimes not. |
-| **Passed** | Tested and nothing found on the scanned pages. | Nothing to do. |
-| **Manual** | Automation can't test this criterion, e.g. "captions are accurate". | A person checks it. The card says how. |
+| **No automated failures** | A rule or check examined matching elements on the scanned pages and found nothing wrong. Automation covers part of a criterion, never all of it. | Nothing urgent; the card lists what a person should still check. |
+| **Manual** | Automation can't test this criterion (e.g. "captions are accurate"), or its rules ran but found nothing to examine (e.g. no `<meta refresh>` for 2.2.1). | A person checks it. The card says how. |
 | **N/A** | Doesn't apply (e.g. media criteria on a site with no video). | |
 
 > **Be clear about what automation proves.** Automated tools can reliably check about 30–40% of WCAG. A report with no failures means "nothing automatically detectable is wrong". It does not mean "the site is accessible". The Manual list is the rest of the job.
 
 **Each issue shows:**
 - **Severity:** critical / serious / moderate / minor.
-- **Type:** *Violation* or *Needs review*.
+- **Type:** *Violation*, *Needs review*, or *Best practice* (an axe rule with no WCAG criterion; listed as advice, not counted as a violation and never fails the build).
+- **Repeats:** the same problem on several pages (a shared header button) is one issue per page, and the report also counts it once as a *unique* problem. When the tool's own check and axe flag the same element, it is one issue.
 - **Source:** *Browser* (found in the running app) or *Source lint* (found in your files). If both found the same problem, it says so: *"also reported by the source lint at src/Nav.tsx:42 — one fix closes both"*.
 - **WCAG criteria** it breaks.
 - **The element's HTML** and a **screenshot** with the element highlighted.
@@ -244,12 +245,13 @@ This writes a pipeline that, on every PR and on a weekly schedule:
 | `A11Y_USER`, `A11Y_PASS` | Test account. The login form is detected and filled automatically. |
 | `A11Y_STORAGE_STATE_B64` | Saved session for SSO/MFA logins. Create it with `npx accessibility-check login`, which prints the command to get the base64. Sessions expire; refresh when CI says so. |
 | `A11Y_PUBLIC_ONLY=1` | Don't log in; scan public pages only. |
-| `A11Y_FAIL_ON_CRITICAL`, `A11Y_FAIL_ON_SERIOUS`, `A11Y_FAIL_ON_TOTAL` | Fail the build above these counts of **confirmed** violations (browser + lint). "Needs review" items never fail the build unless `A11Y_GATE_INCLUDE_UNCONFIRMED=1`. |
+| `A11Y_FAIL_ON_CRITICAL`, `A11Y_FAIL_ON_SERIOUS`, `A11Y_FAIL_ON_TOTAL` | Fail the build above these counts of **confirmed WCAG** violations (browser + lint). "Needs review" items never fail the build unless `A11Y_GATE_INCLUDE_UNCONFIRMED=1`; best-practice findings never do. The generated pipelines default `A11Y_FAIL_ON_CRITICAL` to `0`. Without any threshold the scan warns that the build cannot fail. |
+| `A11Y_GATE_UNIQUE=1` | Count a defect that repeats on many pages (a shared component) once. |
 | `A11Y_BASE_URL` | Scan a deployed environment instead of starting the app. |
 
 If a login is needed but none of the above is set, the scan stops with exit code 2 and says what to add. It never hangs waiting for a person.
 
-**Adopting it on an existing project:** start with no thresholds (report only), then set `A11Y_FAIL_ON_CRITICAL=0` once the critical issues are fixed, and tighten from there.
+**Adopting it on an existing project:** the generated pipelines fail on any confirmed critical violation (`A11Y_FAIL_ON_CRITICAL=0`). To start in report-only mode, set the `A11Y_FAIL_ON_CRITICAL` variable to a high number, then lower it as issues are fixed and add `A11Y_FAIL_ON_SERIOUS`.
 
 ## 10. Inside your Playwright tests
 Your E2E tests already log in, seed data and open dialogs. You can check accessibility at those points too:

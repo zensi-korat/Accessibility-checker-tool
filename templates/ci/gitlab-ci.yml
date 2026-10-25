@@ -6,8 +6,10 @@
 #   A11Y_STORAGE_STATE_B64  (masked) or a saved session (SSO / MFA): run `npx accessibility-check login`
 #                           locally and paste the base64 it prints
 #   A11Y_PUBLIC_ONLY = 1    or scan only the pages that need no login
-# Optional:
-#   A11Y_FAIL_ON_CRITICAL / A11Y_FAIL_ON_SERIOUS  build-failure thresholds
+# Build gate (confirmed WCAG violations only; review items and best-practice findings never fail it):
+#   A11Y_FAIL_ON_CRITICAL   default 0 below — a project CI/CD variable overrides it
+#   A11Y_FAIL_ON_SERIOUS    unset by default — set e.g. 0 once the backlog is cleared
+#   A11Y_GATE_UNIQUE = 1    count a defect repeated on many pages once
 #
 # The app is started by WEB_SERVER in a11y.config.js.
 accessibility:
@@ -17,6 +19,7 @@ accessibility:
   image: mcr.microsoft.com/playwright:v1.63.0-noble
   variables:
     A11Y_CI: '1'
+    A11Y_FAIL_ON_CRITICAL: '0'
   cache:
     key: a11y-history-$CI_COMMIT_REF_SLUG
     paths: [a11y-report/reports/]
