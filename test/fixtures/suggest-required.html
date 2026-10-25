@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Suggestion — required</title>
+<style>.msg{min-height:1.2em}</style></head>
+<body>
+  <form id="f" method="POST" action="/save">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" required aria-describedby="err">
+    <div class="msg" id="err" role="alert"></div>
+    <button id="save" type="submit">Save</button>
+  </form>
+  <script>
+    document.getElementById('f').addEventListener('submit', function (e) {
+      e.preventDefault();
+      document.getElementById('err').textContent = 'Email is required.';
+    });
+  </script>
+</body></html>

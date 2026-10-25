@@ -1,0 +1,7 @@
+{
+  "routes": [
+    { "name": "Home", "pattern": "/app", "include": true, "sources": ["test"], "status": "ok" },
+    { "name": "User detail", "pattern": "/app/users/:id", "include": false, "params": { "id": "" }, "sources": ["test"], "status": "ok" },
+    { "name": "New user", "pattern": "/app/users/new", "include": true, "sources": ["test"], "status": "ok" }
+  ]
+}

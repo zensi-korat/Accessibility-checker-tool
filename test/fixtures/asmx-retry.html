@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>ASP.NET AJAX retry-storm fixture</title></head>
+<body>
+  <h1>Shift Templates (simulated)</h1>
+  <button id="toggle">Enable</button>
+  <div id="log"></div>
+
+  <script>
+    // Reproduces the real ASP.NET AJAX ScriptService client pattern: a POST to
+    // a .asmx endpoint, dataType 'json', with an error handler that retries on
+    // failure. If our guard answers with a blank body, JSON.parse('') throws,
+    // lands here, and this retries — exactly the storm seen in production
+    // against /API2/managers/shift-templates.asmx/changeStatus_ShiftTemplate_ByID.
+    window.__attempts = 0;
+    window.__gaveUp = false;
+    function callService() {
+      window.__attempts++;
+      if (window.__attempts > 25) { window.__gaveUp = true; return; } // real code has no cap
+      fetch('/API2/managers/shift-templates.asmx/changeStatus_ShiftTemplate_ByID', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Accept': 'application/json' },
+        body: JSON.stringify({ id: 42 }),
+      }).then(function (res) {
+        return res.text().then(function (text) {
+          var data = JSON.parse(text); // throws on '' — the real failure mode
+          document.getElementById('log').textContent = 'done: ' + JSON.stringify(data);
+        });
+      }).catch(function () {
+        callService(); // the real app's retry-on-parse-error behaviour
+      });
+    }
+    document.getElementById('toggle').addEventListener('mousedown', callService);
+  </script>
+</body></html>

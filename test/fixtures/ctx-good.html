@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Context change — good</title></head>
+<body>
+  <h1>Good context handling</h1>
+  <a href="#x">First stop</a>
+  <input id="plain">
+  <select id="dept">
+    <option value="a">Alpha</option>
+    <option value="b">Bravo</option>
+  </select>
+  <button id="go">Apply</button>
+  <button id="tip" data-toggle="tooltip" aria-describedby="tt">Info</button>
+  <div id="tt" role="tooltip" style="display:none">Shifts are locked after approval</div>
+  <script>
+    var tip = document.getElementById('tip'), tt = document.getElementById('tt');
+    tip.addEventListener('mouseenter', function () { tt.style.display = 'block'; });
+    // Dismissable with Escape, and it never hides itself on a timer.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') tt.style.display = 'none';
+    });
+  </script>
+</body></html>

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Context change — bad</title></head>
+<body>
+  <h1>Bad context handling</h1>
+  <a href="#x">First stop</a>
+  <!-- 3.2.1: focusing this navigates -->
+  <input id="onfocus" onfocus="document.title='CHANGED BY FOCUS'">
+  <!-- 3.2.2: changing this opens a dialog -->
+  <select id="dept">
+    <option value="a">Alpha</option>
+    <option value="b">Bravo</option>
+  </select>
+  <div id="dlg" role="dialog" style="display:none">Department changed</div>
+  <!-- 1.4.13: native title tooltip -->
+  <button id="tip" title="Shifts are locked after approval">Info</button>
+  <script>
+    document.getElementById('dept').addEventListener('change', function () {
+      document.getElementById('dlg').style.display = 'block';
+    });
+  </script>
+</body></html>

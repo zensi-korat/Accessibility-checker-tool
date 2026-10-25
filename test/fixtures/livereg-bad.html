@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Status messages — bad</title>
+<style>.msg{min-height:1.2em}</style></head>
+<body>
+  <h1>Request time off</h1>
+  <form id="f" method="POST" action="/save">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" required>
+    <!-- No role, no aria-live, no id referenced by the field: visible only. -->
+    <div class="msg" id="out"></div>
+    <button id="save" type="submit">Submit request</button>
+  </form>
+  <script>
+    document.getElementById('f').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = document.getElementById('email').value;
+      document.getElementById('out').textContent =
+        v ? 'Enter a valid email address.' : 'Email is required.';
+    });
+  </script>
+</body></html>

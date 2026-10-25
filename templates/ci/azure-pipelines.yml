@@ -1,0 +1,86 @@
+# Accessibility scan (WCAG 2.2 A + AA) — added by `accessibility-check init --ci azure`.
+#
+# Only needed if pages are behind a login (pipeline variables / a variable group):
+#   A11Y_USER / A11Y_PASS   (secret) a test account — the login form is found and filled automatically
+#   A11Y_STORAGE_STATE_B64  (secret) or a saved session (SSO / MFA): run `npx accessibility-check login`
+#                           locally and paste the base64 it prints
+#   A11Y_PUBLIC_ONLY = 1    or scan only the pages that need no login
+# Optional:
+#   A11Y_FAIL_ON_CRITICAL / A11Y_FAIL_ON_SERIOUS  build-failure thresholds
+#
+# The app is started by WEB_SERVER in a11y.config.js.
+trigger:
+  branches:
+    include: [main]
+pr:
+  branches:
+    include: ['*']
+schedules:
+  - cron: '0 3 * * 1'
+    displayName: Weekly full scan
+    branches:
+      include: [main]
+    always: true
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '22.x'
+
+  - script: npm ci
+    displayName: Install app dependencies    # adjust for pnpm / yarn / dotnet restore
+
+  # Installed outside the project so it never touches your package.json.
+  - script: |
+      npm install --no-save --no-package-lock --prefix "$(Agent.TempDirectory)/a11y" accessibility-check@0
+      "$(Agent.TempDirectory)/a11y/node_modules/.bin/playwright" install --with-deps chromium
+    displayName: Get the accessibility checker
+
+  # Previous runs give the report its trend line and new/fixed/regressed defects.
+  - task: DownloadPipelineArtifact@2
+    displayName: Restore scan history
+    continueOnError: true
+    inputs:
+      source: specific
+      project: $(System.TeamProjectId)
+      pipeline: $(System.DefinitionId)
+      runVersion: latestFromBranch
+      branchName: refs/heads/main
+      artifactName: a11y-history
+      targetPath: $(System.DefaultWorkingDirectory)/a11y-report/reports
+
+  - script: '"$(Agent.TempDirectory)/a11y/node_modules/.bin/accessibility-check" scan'
+    displayName: Scan (browser + source lint)
+    env:
+      A11Y_CI: '1'
+      A11Y_PUBLIC_ONLY: $(A11Y_PUBLIC_ONLY)
+      A11Y_STORAGE_STATE_B64: $(A11Y_STORAGE_STATE_B64)
+      A11Y_USER: $(A11Y_USER)
+      A11Y_PASS: $(A11Y_PASS)
+      A11Y_FAIL_ON_CRITICAL: $(A11Y_FAIL_ON_CRITICAL)
+      A11Y_FAIL_ON_SERIOUS: $(A11Y_FAIL_ON_SERIOUS)
+
+  - task: PublishTestResults@2
+    displayName: Per-page WCAG results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: JUnit
+      testResultsFiles: a11y-report/a11y-results.xml
+      testRunTitle: Accessibility (WCAG 2.2)
+
+  - task: PublishPipelineArtifact@1
+    displayName: Report
+    condition: succeededOrFailed()
+    inputs:
+      targetPath: a11y-report/accessibility-report.html
+      artifact: accessibility-report
+
+  - task: PublishPipelineArtifact@1
+    displayName: Save scan history
+    condition: and(succeededOrFailed(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    inputs:
+      targetPath: a11y-report/reports
+      artifact: a11y-history

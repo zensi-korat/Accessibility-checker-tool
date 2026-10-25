@@ -1,0 +1,27 @@
+# ── SECRETS — never commit ──────────────────────────────────────────────────
+# Playwright storageState files contain LIVE session cookies. Committing one
+# is equivalent to committing a logged-in credential.
+.a11y-auth.json
+*-auth.json
+auth-state.json
+.ci-auth-state.json
+
+# ── Generated output ────────────────────────────────────────────────────────
+node_modules/
+a11y-report/
+reports/
+shots/
+dashboard.html
+report.html
+accessibility-report.html
+report.json
+a11y-results.xml
+.scan-cache.json
+*.tgz
+*.log
+test-results/
+
+# ── Local editor / assistant settings ───────────────────────────────────────
+.claude/
+.vscode/
+.DS_Store

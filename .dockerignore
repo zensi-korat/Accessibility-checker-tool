@@ -1,0 +1,14 @@
+# Build context hygiene: session files hold live cookies.
+*-auth.json
+auth-state.json
+.ci-auth-state.json
+.a11y-auth.json
+node_modules
+a11y-report
+reports
+shots
+test
+*.log
+*.tgz
+.claude
+.vscode

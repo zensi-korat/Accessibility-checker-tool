@@ -1,0 +1,3 @@
+{ "projects": { "shop": { "projectType": "application", "root": "", "sourceRoot": "src",
+  "architect": { "build": { "options": { "baseHref": "/shop/" } } } },
+  "ui-lib": { "projectType": "library", "root": "projects/ui-lib", "sourceRoot": "projects/ui-lib/src" } } }

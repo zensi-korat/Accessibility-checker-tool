@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Contrast sampling fixture</title>
+<style>
+  body { margin:0; font-family: system-ui; }
+  div { padding: 24px; font-size: 16px; }
+  /* axe reports these as "incomplete": it cannot resolve a gradient from CSS. */
+  #bad  { background: linear-gradient(90deg,#c8c8c8,#cfcfcf); color:#a0a0a0; }
+  #good { background: linear-gradient(90deg,#f2f2f2,#ffffff); color:#111111; }
+  /* Large text passes at a lower ratio (3:1 not 4.5:1). */
+  #large{ background: linear-gradient(90deg,#8a8a8a,#8f8f8f); color:#ffffff;
+          font-size: 30px; }
+  /* Visually busy: no colour holds a plurality, so it must stay "review". */
+  #busy { color:#888; background-image:
+     repeating-linear-gradient(45deg,#000 0 6px,#fff 6px 12px,#f00 12px 18px,#0f0 18px 24px); }
+</style></head>
+<body>
+  <div id="bad">Low contrast grey text on a grey gradient</div>
+  <div id="good">High contrast dark text on a light gradient</div>
+  <div id="large">Large white text on mid grey</div>
+  <div id="busy">Text over a busy repeating pattern</div>
+</body></html>

@@ -1,0 +1,1 @@
+{ "name": "react-tanstack", "dependencies": { "react": "^18", "@tanstack/react-router": "^1" } }

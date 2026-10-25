@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Non-text contrast</title>
+<style>
+  body { background:#ffffff; }
+  /* 1.6:1 border on white — fails */
+  #faint  { border:1px solid #e0e0e0; background:#ffffff; }
+  /* ~5.7:1 border on white — passes */
+  #strong { border:1px solid #767676; background:#ffffff; }
+  /* no border, fill nearly identical to page — fails */
+  #ghost  { border:none; background:#fdfdfd; }
+  /* no border, dark fill — passes */
+  #filled { border:none; background:#1a5490; color:#fff; }
+  /* disabled is exempt even though it is faint */
+  #off    { border:1px solid #eeeeee; background:#ffffff; }
+  /* sits on a gradient: unresolvable from CSS, must be review */
+  .grad   { background:linear-gradient(90deg,#333,#ddd); padding:10px; }
+  #onimg  { border:1px solid #888888; background:transparent; }
+</style></head>
+<body>
+  <button id="faint">Faint</button>
+  <button id="strong">Strong</button>
+  <button id="ghost">Ghost</button>
+  <button id="filled">Filled</button>
+  <button id="off" disabled>Disabled</button>
+  <div class="grad"><button id="onimg">On gradient</button></div>
+</body></html>

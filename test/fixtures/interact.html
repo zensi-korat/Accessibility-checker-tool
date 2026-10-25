@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Interaction guard fixture</title>
+<style>
+  /* Reserve the message row's height. Without this, clearing the validation
+     text on blur collapses the div and the Save button jumps up between
+     mousedown and mouseup, so no click event is ever produced — which made
+     this test look like the guard had blocked a submit that never happened. */
+  #err { min-height: 1.2em; }
+</style></head>
+<body>
+  <h1>Interaction guard fixture</h1>
+
+  <!-- A drawer that exists in the DOM only after a click -->
+  <button id="openDrawer">Open Filters</button>
+  <div id="drawer" hidden><label for="dept">Department</label><input id="dept"></div>
+
+  <!-- Client-side validation into a live region: the 4.1.3 signal -->
+  <form id="f" method="POST" action="/save">
+    <label for="email">Email</label>
+    <input id="email" name="email" required type="email">
+    <div id="err" role="alert"></div>
+    <button id="save" type="submit">Save</button>
+  </form>
+
+  <!-- A write dressed as a read -->
+  <a id="del" href="/records/delete?id=42">Remove</a>
+  <!-- An ordinary link to somewhere else -->
+  <a id="nav" href="/other">Other page</a>
+
+  <script>
+    openDrawer.onclick = function () { drawer.hidden = false; };
+    email.addEventListener('blur', function () {
+      err.textContent = email.validity.valid ? '' : 'Enter a valid email address.';
+    });
+    // Proves the form really attempted to submit, so a test cannot pass just
+    // because native constraint validation stopped it before the guard ran.
+    window.__sent = [];
+    f.addEventListener('submit', function () { window.__sent.push('form-submit'); });
+  </script>
+</body></html>

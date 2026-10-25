@@ -1,0 +1,31 @@
+# Publishes accessibility-check to npm when a version tag (v0.1.0, v0.2.0, …) is pushed.
+#
+# One-time setup on npmjs.com → package settings → "Trusted publishing":
+#   add this GitHub repository and the workflow file name `publish.yml`.
+# No npm token is stored in GitHub; npm verifies the workflow via OIDC and
+# attaches a provenance statement to every release.
+name: Publish to npm
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write   # OIDC for trusted publishing + provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - name: Tag matches package.json version
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - run: npm publish --provenance --access public

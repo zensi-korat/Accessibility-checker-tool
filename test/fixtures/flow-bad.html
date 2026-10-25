@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Form flow — bad</title></head>
+<body>
+  <h1>Add employee</h1>
+  <form id="f">
+    <label for="e1">Email address</label><input id="e1" autocomplete="email">
+    <!-- same info asked twice, both empty, no confirm wording -->
+    <label for="e2">Email address</label><input id="e2" autocomplete="email">
+    <!-- legitimately repeated: must NOT be flagged -->
+    <label for="p1">Password</label><input id="p1" type="password">
+    <label for="p2">Confirm password</label><input id="p2" type="password">
+    <button type="submit">Save</button>
+  </form>
+</body></html>

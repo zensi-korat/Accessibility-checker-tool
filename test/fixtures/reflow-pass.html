@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Viewport fixture — should PASS all four</title>
+<style>
+  body { margin: 0; font: 16px/1.2 system-ui; }
+  .panel { max-width: 900px; background: #cde; padding: 12px; }
+  /* min-height, not height: the box grows instead of clipping */
+  .flex-box { min-height: 40px; max-width: 260px; background: #fed; }
+  /* Exempt content kept inside its own scroller — the page itself never widens */
+  .table-scroll { overflow-x: auto; }
+  table { width: 700px; border-collapse: collapse; }
+  td, th { border: 1px solid #999; padding: 4px; }
+  img { max-width: 100%; height: auto; }
+</style></head>
+<body>
+  <div class="panel">A max-width panel reflows down to 320px without scrolling.</div>
+  <div class="flex-box">This sentence is long enough to need more than one line, and the box simply grows to fit it.</div>
+  <div class="table-scroll">
+    <table>
+      <tr><th>Employee</th><th>Shift</th><th>Location</th><th>Hours</th></tr>
+      <tr><td>A. Smith</td><td>Morning</td><td>North Campus</td><td>8</td></tr>
+    </table>
+  </div>
+</body></html>

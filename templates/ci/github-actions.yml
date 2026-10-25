@@ -1,0 +1,86 @@
+# Accessibility scan (WCAG 2.2 A + AA) — added by `accessibility-check init --ci github`.
+#
+# Only needed if pages are behind a login (Settings → Secrets and variables → Actions):
+#   secrets   A11Y_USER / A11Y_PASS   a test account — the login form is found and filled automatically
+#   secret    A11Y_STORAGE_STATE_B64  or a saved session (SSO / MFA): run `npx accessibility-check login`
+#                                     locally and paste the base64 it prints
+#   variable  A11Y_PUBLIC_ONLY = 1    or scan only the pages that need no login
+# Optional:
+#   variable  A11Y_FAIL_ON_CRITICAL / A11Y_FAIL_ON_SERIOUS  build-failure thresholds
+#
+# The app is started by WEB_SERVER in a11y.config.js. Reports are uploaded as
+# the "accessibility-report" artifact; open accessibility-report.html.
+name: Accessibility
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1'   # weekly full scan
+  workflow_dispatch:
+
+jobs:
+  a11y:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install app dependencies
+        run: npm ci          # adjust for pnpm / yarn / dotnet restore
+
+      # Installed outside the project so it never touches your package.json.
+      - name: Get the accessibility checker
+        run: |
+          npm install --no-save --no-package-lock --prefix "$RUNNER_TEMP/a11y" accessibility-check@0
+          "$RUNNER_TEMP/a11y/node_modules/.bin/playwright" install --with-deps chromium
+
+      # Previous runs give the report its trend line and new/fixed/regressed defects.
+      - name: Restore scan history
+        uses: actions/cache/restore@v4
+        with:
+          path: a11y-report/reports
+          key: a11y-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            a11y-history-${{ github.ref_name }}-
+            a11y-history-main-
+
+      - name: Scan (browser + source lint)
+        run: '"$RUNNER_TEMP/a11y/node_modules/.bin/accessibility-check" scan'
+        env:
+          A11Y_CI: '1'
+          A11Y_PUBLIC_ONLY: ${{ vars.A11Y_PUBLIC_ONLY }}
+          A11Y_STORAGE_STATE_B64: ${{ secrets.A11Y_STORAGE_STATE_B64 }}
+          A11Y_USER: ${{ secrets.A11Y_USER }}
+          A11Y_PASS: ${{ secrets.A11Y_PASS }}
+          A11Y_FAIL_ON_CRITICAL: ${{ vars.A11Y_FAIL_ON_CRITICAL }}
+          A11Y_FAIL_ON_SERIOUS: ${{ vars.A11Y_FAIL_ON_SERIOUS }}
+
+      - name: Save scan history
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: a11y-report/reports
+          key: a11y-history-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-report
+          path: |
+            a11y-report/accessibility-report.html
+            a11y-report/report.json
+            a11y-report/a11y-results.xml
+
+      - name: Per-page results in the checks tab
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: a11y-report/a11y-results.xml
+          check_name: Accessibility (WCAG 2.2)

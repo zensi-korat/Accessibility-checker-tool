@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Pointer cancellation</title>
+<style>button,div.ctl{display:block;margin:6px;padding:10px;width:220px}</style></head>
+<body>
+  <h1>Pointer cancellation</h1>
+  <div id="log"></div>
+
+  <!-- FAILS: acts on mousedown, cannot be aborted -->
+  <button id="ondown">Delete on press</button>
+
+  <!-- PASSES: acts on click, so dragging away aborts -->
+  <button id="onclick">Delete on click</button>
+
+  <!-- PASSES: has a mousedown listener, but it only does harmless visual work -->
+  <button id="harmless">Ripple only</button>
+
+  <!-- EXEMPT: slider — acting on down is essential -->
+  <input id="slider" type="range" min="0" max="10">
+
+  <!-- EXEMPT: drag source -->
+  <div id="drag" class="ctl" draggable="true">Drag me</div>
+
+  <script>
+    var log = document.getElementById('log');
+    document.getElementById('ondown').addEventListener('mousedown', function () {
+      log.textContent = 'RECORD DELETED PERMANENTLY BY PRESS';
+    });
+    document.getElementById('onclick').addEventListener('click', function () {
+      log.textContent = 'RECORD DELETED PERMANENTLY BY CLICK';
+    });
+    document.getElementById('harmless').addEventListener('mousedown', function (e) {
+      e.currentTarget.style.outline = '2px solid #333';
+    });
+    document.getElementById('harmless').addEventListener('mouseup', function (e) {
+      e.currentTarget.style.outline = '';
+    });
+    document.getElementById('slider').addEventListener('mousedown', function () {});
+    document.getElementById('drag').addEventListener('mousedown', function () {});
+  </script>
+</body></html>

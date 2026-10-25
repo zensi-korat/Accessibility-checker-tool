@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Status messages — good</title>
+<style>.msg{min-height:1.2em}</style></head>
+<body>
+  <h1>Request time off</h1>
+  <form id="f" method="POST" action="/save">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" required aria-describedby="emailErr">
+    <!-- Announced (role=alert) AND linked to the field (aria-describedby). -->
+    <div class="msg" id="emailErr" role="alert"></div>
+    <button id="save" type="submit">Submit request</button>
+  </form>
+  <script>
+    document.getElementById('f').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var el = document.getElementById('email');
+      el.setAttribute('aria-invalid', 'true');
+      document.getElementById('emailErr').textContent =
+        el.value ? 'Enter a valid email address.' : 'Email is required.';
+    });
+  </script>
+</body></html>

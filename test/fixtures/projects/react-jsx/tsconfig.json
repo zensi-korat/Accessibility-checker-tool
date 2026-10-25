@@ -1,0 +1,4 @@
+{
+  // JSONC on purpose
+  "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["src/*"] }, },
+}

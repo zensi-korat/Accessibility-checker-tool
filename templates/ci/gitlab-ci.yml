@@ -1,0 +1,39 @@
+# Accessibility scan (WCAG 2.2 A + AA) — added by `accessibility-check init --ci gitlab`.
+# Include it from .gitlab-ci.yml:   include: .gitlab/accessibility.gitlab-ci.yml
+#
+# Only needed if pages are behind a login (Settings → CI/CD → Variables):
+#   A11Y_USER / A11Y_PASS   (masked) a test account — the login form is found and filled automatically
+#   A11Y_STORAGE_STATE_B64  (masked) or a saved session (SSO / MFA): run `npx accessibility-check login`
+#                           locally and paste the base64 it prints
+#   A11Y_PUBLIC_ONLY = 1    or scan only the pages that need no login
+# Optional:
+#   A11Y_FAIL_ON_CRITICAL / A11Y_FAIL_ON_SERIOUS  build-failure thresholds
+#
+# The app is started by WEB_SERVER in a11y.config.js.
+accessibility:
+  stage: test
+  # Node + Chromium's system libraries; the browser itself is installed below
+  # with the checker's own Playwright version.
+  image: mcr.microsoft.com/playwright:v1.63.0-noble
+  variables:
+    A11Y_CI: '1'
+  cache:
+    key: a11y-history-$CI_COMMIT_REF_SLUG
+    paths: [a11y-report/reports/]
+    when: always
+  script:
+    - npm ci                      # adjust for pnpm / yarn / dotnet restore
+    - npm install --no-save --no-package-lock --prefix /tmp/a11y accessibility-check@0
+    - /tmp/a11y/node_modules/.bin/playwright install chromium
+    - /tmp/a11y/node_modules/.bin/accessibility-check scan
+  artifacts:
+    when: always
+    expose_as: Accessibility report
+    paths:
+      - a11y-report/accessibility-report.html
+    reports:
+      junit: a11y-report/a11y-results.xml
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
