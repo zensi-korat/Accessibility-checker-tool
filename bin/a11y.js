@@ -42,7 +42,8 @@ const positional = () => argv.slice(1).find((a, i, all) => !a.startsWith('--') &
 const log = (m = '') => process.stdout.write(m + '\n');
 
 function usage() {
-  log(fs.readFileSync(__filename, 'utf8').match(/\/\*\*([\s\S]*?)\*\//)[1].replace(/^ \* ?/gm, '').trim());
+  log(fs.readFileSync(__filename, 'utf8').match(/\/\*\*([\s\S]*?)\*\//)[1].replace(/^ \* ?/gm, '').trim()
+    .replace('With npx:  npx accessibility-check <command>', `Run it as:  ${CLI} <command>`));
 }
 
 // ── init ─────────────────────────────────────────────────────────────────────

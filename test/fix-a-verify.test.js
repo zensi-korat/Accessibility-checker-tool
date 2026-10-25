@@ -76,5 +76,18 @@ console.log('\nselector moved');
   check(has(v, 'still', 'sr-unnamed-control') && !v.new.length, 'injected style="" ignored when matching markup');
 }
 
+console.log('\nlint finding on an edited line');
+{
+  const lint = (key, line, rule = 'jsx-a11y/alt-text') => ({ rule, page: 'Source code (lint)', target: `src/App.jsx:${line}:5`, html: '<img>', states: ['lint'], kind: 'violation', impact: 'critical', lintKey: key, source: 'lint' });
+  const base = { pages: new Map([['Source code (lint)', { at: new Date('2026-01-01'), label: 'x', issues: [lint('alt|src/App.jsx|aaa', 12)] }]]) };
+  const lintScan = { page: 'Source code (lint)', state: 'lint', violations: [], incomplete: [], passes: [], inapplicable: [] };
+  let v = buildVerification(base, [lintScan], [lint('alt|src/App.jsx|bbb', 12)]);
+  check(v.still.length === 1 && v.fixed.length === 0 && v.new.length === 0, 'same rule, same line, line text edited → still failing (not fixed + new)');
+  v = buildVerification(base, [lintScan], [lint('alt|src/App.jsx|ccc', 40)]);
+  check(v.fixed.length === 1 && v.new.length === 1, 'same rule far away in the file → the old one fixed, a different one new');
+  v = buildVerification(base, [lintScan], []);
+  check(v.fixed.length === 1, 'gone from the file → fixed');
+}
+
 console.log(failures ? `\n${failures} failure(s)` : '\nall passed');
 process.exitCode = failures ? 1 : 0;

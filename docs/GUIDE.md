@@ -33,10 +33,13 @@ Both feed one report. Each issue is mapped to a WCAG success criterion and comes
 - About 150 MB for the Chromium browser. The first scan offers to download it, or run `npx playwright install chromium` yourself.
 - **Git installed** (`git --version`). The tool is installed straight from its public GitHub repository, not from the npm registry. No GitHub account or sign-in is needed.
 
-**Install it in your project** (from the project's root folder):
+**Install it in your project** (from the project's root folder), with the package manager the project already uses:
 ```bash
-npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git
+npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git          # npm
+pnpm add -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git       # pnpm (add -w in a pnpm workspace root)
+yarn add -D accessibility-check@git+https://github.com/zensi-korat/Accessibility-checker-tool.git   # yarn
 ```
+Don't use npm in a pnpm or yarn project: npm can't read their `node_modules` and fails with `Cannot read properties of null (reading 'matches')`. In a pnpm project, `pnpm exec accessibility-check …` runs the tool too.
 To update later, run `npm update accessibility-check`.
 
 The commands below use `npx accessibility-check …`, which runs the installed copy. Install first: without the install, `npx accessibility-check` looks on the public npm registry, where this tool doesn't exist. Once installed, the short name `npx a11y …` works too.
@@ -348,6 +351,7 @@ docker run --rm -v "$PWD:/work" -e A11Y_BASE_URL=http://host.docker.internal:300
 | `LOGIN` | `{ mode: 'auto' }` | `auto` (detect and ask), `manual` (always a browser window), `form` (scripted steps), `none`. Also `stateFile`, `startPath`, `timeoutMs`, `scanLoginPage: false`. |
 | `STATIC_LINT` | enabled | `{ enabled, include, exclude, rules }`. |
 | `FAIL_ON` | none | `{ critical, serious, total }` build thresholds. |
+| `LIVE_REGION_CHECKS` | `false` | Also submit forms and interact with controls (network writes are blocked) to check error messages and status announcements (3.3.1, 3.3.3, 4.1.3), changes on focus/input (3.2.1, 3.2.2), hover pop-ups (1.4.13) and pointer cancellation (2.5.2). |
 | `AUTO_EXPLORE` / `SAFE_MODE` | `false` / `true` | Let the tool open hidden UI itself, read-only. |
 | `HEADLESS` | auto | `false` to watch the scan in a visible browser. Env: `A11Y_HEADLESS=0`. |
 | `VIEWPORT` | 1440×900 | Browser size. Reflow (320 px) and zoom checks run separately. |

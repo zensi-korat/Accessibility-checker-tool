@@ -11,6 +11,9 @@ WCAG 2.2 A + AA accessibility checks for **any web project**: React, Next.js, An
 - **Proves your fixes worked.** Re-checks say *fixed*, *still failing* or *new*, and never guess.
 - **Handles login screens**, and runs in CI with JUnit output and a build gate.
 
+<p align="center"><img src="docs/images/fix-plan.png" alt="The fix plan: a progress bar showing 2 of 20 issues fixed, an Up next card, and the Fix first list of issues with Re-check buttons"></p>
+<p align="center"><sub>The fix plan: what to fix first, why, and live progress as you fix things.</sub></p>
+
 > **Not on the npm registry.** Install it straight from this GitHub repository, as shown below.
 
 ## Before you start
@@ -21,10 +24,14 @@ WCAG 2.2 A + AA accessibility checks for **any web project**: React, Next.js, An
 You don't need to clone this repository; npm fetches it for you.
 
 ## Install
-In **your project's** root folder (the app you want to check):
+In **your project's** root folder (the app you want to check), use the package manager your project already uses:
 ```bash
-npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git
+npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git          # npm (package-lock.json)
+pnpm add -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git       # pnpm (pnpm-lock.yaml)
+yarn add -D accessibility-check@git+https://github.com/zensi-korat/Accessibility-checker-tool.git   # yarn (yarn.lock)
 ```
+If pnpm says `ERR_PNPM_ADDING_TO_ROOT` (the project has a `pnpm-workspace.yaml`), add `-w`: `pnpm add -D -w git+https://github.com/zensi-korat/Accessibility-checker-tool.git`.
+
 This adds `accessibility-check` to your project's `devDependencies`. Teammates on that project then get it with a normal `npm install`.
 
 > Install first. Until it is installed in the project, `npx accessibility-check` looks on the public npm registry, where this tool doesn't exist.
@@ -42,6 +49,20 @@ npx accessibility-check scan      # start the app, scan every page + lint the so
 npx accessibility-check fix       # live fix plan: issues tick off as you fix them
 npx accessibility-check verify    # re-check: ✔ fixed · ✗ still failing · ⚠ new · ? couldn't verify
 ```
+In a pnpm project use `pnpm exec accessibility-check …`; with yarn, `yarn accessibility-check …`. The tool's own hints follow whichever you use.
+
+**How long a scan takes:** about 30 seconds of setup, plus a few seconds per page. A small site takes under a minute; a 20–30 page app takes a few minutes. The first run also downloads the browser, once per machine.
+
+<p align="center"><img src="docs/images/scan-terminal.png" alt="Terminal output of a scan: each page with its violation count, the source lint result, and a summary with 22 violations (20 unique), the fix plan counts and the report file to share" width="760"></p>
+
+## Re-check your fixes
+Fix something, then either:
+- run `npx accessibility-check verify`, which re-scans only the pages that had issues and reports ✔ fixed · ✗ still failing · ⚠ new, or
+- keep `npx accessibility-check fix` open while you work. Save a file (or click **Re-check**) and the cards update in place: proven fixes turn green and move to **Done**, and anything new is flagged.
+
+<p align="center"><img src="docs/images/live-recheck.png" alt="Live fix plan after a re-check: two cards turned green with a Fixed badge and a toast saying 2 issues fixed"></p>
+
+A fix only counts when a re-scan proves it. If the page or dialog couldn't be checked again, the issue is listed as *couldn't verify*, never as fixed.
 
 ## Updating
 ```bash
@@ -54,6 +75,8 @@ This pulls the latest version from the repository. When releases are tagged, you
 |---|---|
 | `spawn git ENOENT` / `git: command not found` | Git isn't installed. Install it from [git-scm.com](https://git-scm.com/) and try again. |
 | `404 Not Found … accessibility-check` | You ran `npx accessibility-check` before installing. Run the install command first. |
+| `Cannot read properties of null (reading 'matches')` | You ran npm in a pnpm (or yarn) project. Install with that project's package manager instead (see [Install](#install)). |
+| `ERR_PNPM_ADDING_TO_ROOT` | The project is a pnpm workspace. Add `-w` to install at the root, or `--filter <app>` to install into one app. |
 | `Unsupported engine` / `requires node >= 20` | Update Node.js to version 20 or newer. |
 | `npm warn deprecated eslint@9…` | Expected and harmless. The tool stays on ESLint 9 until its React lint rules support ESLint 10. |
 
@@ -73,6 +96,27 @@ This pulls the latest version from the repository. When releases are tagged, you
 
 The same list, with copy buttons, is under **Commands** in the report.
 
+## What it checks
+All **56 WCAG 2.2 Level A and AA success criteria** are listed in the report, each with a status. Automated checks cover:
+
+| Area | Examples |
+|---|---|
+| Images and text alternatives | Missing or empty `alt`, unlabelled icons and SVGs |
+| Forms | Inputs and selects without labels, asking for the same information twice |
+| Screen readers | Buttons and links without a name, invalid ARIA, broken `aria-labelledby`, focusable content hidden with `aria-hidden` |
+| Keyboard | Click handlers that keyboards can't reach, keyboard traps, missing focus indicators, focus order |
+| Colour and contrast | Text contrast (including over images and gradients), contrast of controls and borders |
+| Zoom and layout | Zoom disabled, content cut off at 200% or 320 px wide, text spacing, orientation lock |
+| Structure | Page titles, page language, headings, landmarks, lists and tables |
+| Touch | Targets smaller than 24×24 px |
+| Consistency | Navigation, help links and labels that change from page to page |
+| Hidden UI | Dialogs, menus, tabs and accordions are opened and checked too |
+| Your source code | JSX/TSX, Vue, Angular templates and HTML, with exact `file:line` |
+
+Optional deeper checks, turned on with `LIVE_REGION_CHECKS: true` in the config, also submit forms and interact with the page, with network writes blocked so nothing is saved. They cover error messages and status announcements, content that changes on focus or input, hover pop-ups, and pointer cancellation.
+
+Criteria that need a person, like whether alt text is *meaningful* or captions are *accurate*, are marked **Manual**, with steps for checking them.
+
 ## What you get
 Everything is written to `a11y-report/`:
 
@@ -86,6 +130,38 @@ Everything is written to `a11y-report/`:
 Decisions you make in the fix plan (in progress, snoozed, won't fix) are saved to `a11y.triage.json`. Commit it to share them with your team.
 
 > **What automation can and can't tell you.** Automated testing reliably covers about 30–40% of WCAG. "No automated failures" means nothing detectable is wrong, not that the site is accessible. The report lists which criteria still need a person, and how to check each one.
+
+### A tour of the report
+**Dashboard.** Where to start, plus totals by severity. Repeats across pages are counted once as *unique*.
+
+<img src="docs/images/dashboard.png" alt="Accessibility dashboard: a Where to start panel listing the top three issues to fix, and cards for health score, confirmed violations, and critical, serious, moderate and minor counts">
+
+**WCAG coverage.** All 56 criteria at a glance, and which page fails which criterion.
+
+<img src="docs/images/wcag-coverage.png" alt="WCAG 2.2 coverage: a bar of failed, partial, no automated failures and cannot-support criteria, and a page-by-criterion matrix coloured by status">
+
+**Every issue explained.** Why it is ranked where it is, how to fix it, where it is in your code, and the affected elements with screenshots. Copy it as a ticket in one click.
+
+<img src="docs/images/fix-plan-card.png" alt="An expanded fix-plan card for "A form field has no associated label": reasons it is ranked third, fix advice, the source location contact.html line 24, a screenshot of the field, and buttons to re-check, mark in progress or copy as a ticket">
+
+<details>
+<summary><b>More screenshots:</b> a finding in the detailed report, the criteria cards, and the Commands dialog</summary>
+
+<br>
+
+**A finding in the detailed report:** the element highlighted on the page, its HTML, the fix, and the matching line in your code.
+
+<img src="docs/images/finding.png" alt="A finding in the detailed report: the unlabelled input highlighted with a red box in a page screenshot, its HTML, how to fix it, and the likely source line">
+
+**Criteria cards:** each WCAG criterion with its status and what a person should check.
+
+<img src="docs/images/wcag-criteria.png" alt="WCAG criteria cards for the Perceivable principle, each with a status such as Failed, Partial or No automated failures, and a short explanation">
+
+**Commands:** every command in one place, with copy buttons (press `c` in the fix plan).
+
+<img src="docs/images/commands.png" alt="The Commands dialog listing commands such as fix, verify, scan and lint, each with a description and a Copy button" width="640">
+
+</details>
 
 ## Configuration
 `init` writes this for you. Only `BASE_URL` is required:
