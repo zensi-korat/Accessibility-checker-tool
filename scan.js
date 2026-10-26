@@ -462,11 +462,23 @@ async function scanAll() {
       }
     }
   }
+  // No pages from the config or the routes file. Rather than stop, say why and
+  // find pages the way a quick scan does: a read-only crawl of the running app.
+  let crawlFallback = false;
   if (!config.AUTO_EXPLORE && !config.PAGES.length && !lintOnly && !config._meta.quick) {
-    log('\n✗ Nothing to scan: PAGES is empty and no included routes were found in the routes manifest.');
-    log(`  Run \`${CLI} discover\` to list your app's routes, or add PAGES to the config.`);
-    process.exitCode = 2;
-    return;
+    let why = 'no routes were found in the source';
+    try {
+      const routes = (JSON.parse(fs.readFileSync(config.ROUTES_FILE, 'utf8')).routes || []);
+      const active = routes.filter((r) => r.status !== 'gone');
+      const needIds = active.filter((r) => r.include === false && r.params && Object.values(r.params).some((v) => v === '' || v == null));
+      if (!active.length) why = `${path.basename(config.ROUTES_FILE)} lists no routes`;
+      else if (needIds.length === active.length) why = `all ${active.length} route(s) in ${path.basename(config.ROUTES_FILE)} are dynamic and need a sample value (e.g. ${needIds[0].pattern})`;
+      else why = `every route in ${path.basename(config.ROUTES_FILE)} is excluded`;
+    } catch { /* no routes file */ }
+    log(`\n⚠ No pages to scan from the config: ${why}.`);
+    log('  Crawling the running app instead to find pages (read-only).');
+    log(`  For a repeatable page list: \`${CLI} discover --live\`, or add PAGES / params in the config.`);
+    crawlFallback = true;
   }
 
   const mapper = config.REPO_PATH
@@ -716,18 +728,20 @@ async function scanAll() {
   }
 
   // Quick scan: the pages are whatever a read-only crawl of the site finds.
-  if (config._meta.quick && !config.PAGES.length) {
+  if ((config._meta.quick || crawlFallback) && !config.PAGES.length) {
     const { discoverLive, applyLive } = require('./lib/routes/live');
     const { mergeManifest, pagesFromManifest } = require('./lib/routes/manifest');
-    const max = config._meta.quick.maxPages;
-    log(`\nNo a11y.config.js here — quick scan. Finding pages (read-only crawl, up to ${max})…`);
+    const max = (config._meta.quick && config._meta.quick.maxPages) || config.MAX_PAGES || 20;
+    log(crawlFallback
+      ? `\nFinding pages on the running app (read-only crawl, up to ${max})…`
+      : `\nNo a11y.config.js here — quick scan. Finding pages (read-only crawl, up to ${max})…`);
     try {
       // After login, so the crawl reuses the saved session and sees the app.
       const seeds = START_PATH && START_PATH !== '/' ? [config.BASE_URL + START_PATH] : [];
       const live = await discoverLive(config, { maxPages: max, log, seeds });
       const manifest = mergeManifest(null, applyLive([], live.found).routes);
       config.PAGES = pagesFromManifest(manifest).slice(0, max);
-      log(`  ${config.PAGES.length} page(s) to scan. For a repeatable setup run \`${CLI} init\` in your project.`);
+      log(`  ${config.PAGES.length} page(s) to scan.${crawlFallback ? ` Save them for next time with \`${CLI} discover --live\`.` : ` For a repeatable setup run \`${CLI} init\` in your project.`}`);
     } catch (e) {
       log(`  ⚠ crawl failed (${String(e.message).split('\n')[0]}) — scanning the start page only.`);
     }
