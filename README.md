@@ -48,6 +48,7 @@ npx accessibility-check init      # detect your stack, write a11y.config.js, lis
 npx accessibility-check scan      # start the app, scan every page + lint the source, open the report
 npx accessibility-check fix       # live fix plan: issues tick off as you fix them
 npx accessibility-check verify    # re-check: ✔ fixed · ✗ still failing · ⚠ new · ? couldn't verify
+npx accessibility-check scan --only contrast,aria,links   # check just these issue types
 ```
 In a pnpm project use `pnpm exec accessibility-check …`; with yarn, `yarn accessibility-check …`. The tool's own hints follow whichever you use.
 
@@ -65,10 +66,13 @@ Fix something, then either:
 A fix only counts when a re-scan proves it. If the page or dialog couldn't be checked again, the issue is listed as *couldn't verify*, never as fixed.
 
 ## Updating
+Your lockfile pins the commit you installed, so `npm install` keeps giving you that version. To get the latest, run the install command again:
 ```bash
-npm update accessibility-check
+npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git
+pnpm add -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git
+yarn add -D accessibility-check@git+https://github.com/zensi-korat/Accessibility-checker-tool.git
 ```
-This pulls the latest version from the repository. When releases are tagged, you can stay on one by adding the tag to the install URL, for example `npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git#v0.1.0`.
+Commit the updated lockfile so teammates get the same version. To stay on a tagged release instead, add the tag to the URL, for example `npm i -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git#v0.2.0`. Check which version you have with `npm ls accessibility-check`.
 
 ## If installing fails
 | Message | Fix |

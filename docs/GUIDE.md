@@ -40,7 +40,7 @@ pnpm add -D git+https://github.com/zensi-korat/Accessibility-checker-tool.git   
 yarn add -D accessibility-check@git+https://github.com/zensi-korat/Accessibility-checker-tool.git   # yarn
 ```
 Don't use npm in a pnpm or yarn project: npm can't read their `node_modules` and fails with `Cannot read properties of null (reading 'matches')`. In a pnpm project, `pnpm exec accessibility-check …` runs the tool too.
-To update later, run `npm update accessibility-check`.
+To update later, run the same install command again. Your lockfile pins the installed commit, so a plain `npm install` keeps the old version. Commit the updated lockfile so teammates get it too.
 
 The commands below use `npx accessibility-check …`, which runs the installed copy. Install first: without the install, `npx accessibility-check` looks on the public npm registry, where this tool doesn't exist. Once installed, the short name `npx a11y …` works too.
 
@@ -150,7 +150,16 @@ It also detects HTTP Basic/Windows authentication (it asks for credentials and k
 
 **Exact locations from the browser scan.** Scan a **dev server** (`npm run dev`, `ng serve`, …) to get exact locations. Dev builds of React, Vue, Angular and Svelte record which file each element came from. Production builds fall back to text search.
 
-**Report filters:** severity, violation vs. review, browser vs. source lint, and a per-page view on the dashboard.
+**Report filters:** severity, violation vs. review, browser vs. source lint, and a per-page view on the dashboard. The Issues page and the fix plan also filter by **issue type**: Contrast & color, ARIA & roles, Links & buttons, Images & media, Forms & labels, Keyboard & focus, Headings & structure, Zoom & reflow. Pick several at once (for example contrast + ARIA + links). `report.html?type=contrast,aria` opens the Issues page already filtered.
+
+**Checking only some issue types.** To scan for just those types, add `--only`:
+
+```bash
+npx accessibility-check scan --only contrast,aria,links
+npx accessibility-check verify --only contrast      # also works on fix, render and lint
+```
+
+axe runs only the matching rules, the tool's own checks that cannot report those types are skipped, and the source lint is filtered the same way. The run is faster. Set `ONLY: ['contrast', 'aria', 'links']` in `a11y.config.js` to make it the default. A scoped run writes to its own folder, `a11y-report/only-contrast-aria-links/`, with its own history. That keeps it from making the other issues of a full scan look fixed. Its WCAG coverage only covers the criteria those types test, and the report says so at the top.
 
 ## 6. Fixing issues and checking your fixes
 The loop is: **scan → fix → verify**. The easiest way to run it is the live fix plan.

@@ -10,6 +10,9 @@
  *                                                  app (read-only) for sample ids and routes source can't show
  *   a11y scan [--config <file>] [--public-only]    scan the running app; asks for a login if one is needed
  *   a11y scan <url> [--max-pages N]                quick scan of any URL, no config needed
+ *   a11y scan --only contrast,aria,links           check only these issue types (also on verify, fix,
+ *                                                  render, lint): contrast, aria, links, images, forms,
+ *                                                  keyboard, structure, layout. Reports: a11y-report/only-…/
  *   a11y lint [dir] [--strict] [--json]            accessibility lint of the source (no browser)
  *   a11y verify [--all]                            re-check the issues from the last scan after you fixed them
  *   a11y fix [--no-watch] [--port N] [<url>]       live fix plan in the browser: issues in priority order,
@@ -37,9 +40,17 @@ const argv = process.argv.slice(2);
 const cmd = argv[0];
 const flag = (name) => argv.includes(name);
 const opt = (name) => { const i = argv.indexOf(name); return i > -1 ? argv[i + 1] : undefined; };
-const VALUE_FLAGS = ['--url', '--config', '--max-pages', '--ci', '--port'];
+const VALUE_FLAGS = ['--url', '--config', '--max-pages', '--ci', '--port', '--only'];
 const positional = () => argv.slice(1).find((a, i, all) => !a.startsWith('--') && !VALUE_FLAGS.includes(all[i - 1]));
 const log = (m = '') => process.stdout.write(m + '\n');
+
+// `--only contrast,aria` travels as A11Y_ONLY, so scan.js and the re-checks
+// `a11y fix` spawns all see it (lib/categories.js#scopeConfig).
+if (opt('--only') !== undefined) {
+  try { process.env.A11Y_ONLY = require('../lib/categories').parseOnly(opt('--only')).join(','); }
+  catch (e) { console.error(`✗ ${e.message}`); process.exit(2); }
+  if (!process.env.A11Y_ONLY) { console.error('✗ --only needs a list, e.g. --only contrast,aria,links'); process.exit(2); }
+}
 
 function usage() {
   log(fs.readFileSync(__filename, 'utf8').match(/\/\*\*([\s\S]*?)\*\//)[1].replace(/^ \* ?/gm, '').trim()
@@ -308,6 +319,10 @@ async function lint() {
   }
   stacks = stacks && stacks.length ? stacks : detectStacks(root).map((s) => s.id);
   const res = await lintProject(root, stacks, opts);
+  if (process.env.A11Y_ONLY) {
+    const keep = require('../lib/categories').inScope(process.env.A11Y_ONLY.split(','));
+    res.findings = res.findings.filter((f) => keep(f.ruleId));
+  }
   if (flag('--json')) { log(JSON.stringify(res.findings.map(({ abs, mapping, ...f }) => ({ ...f, wcag: mapping.sc, bestPractice: !!mapping.bp, confidence: mapping.conf, impact: mapping.impact })), null, 2)); }
   else {
     log(`Accessibility lint — ${root}${stacks.length ? `  (${stacks.join(', ')})` : ''}`);
