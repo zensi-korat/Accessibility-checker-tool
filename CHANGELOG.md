@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 — filter and scan by issue type
+
+- Every rule (axe, the tool's own checks, the source lint) belongs to one issue type: contrast, aria, links, images, forms, keyboard, structure, layout (`lib/categories.js`). Issues carry it as `topic`.
+- The Issues page, the single-file report and the fix plan filter by type, with several types at once. `report.html?type=contrast` opens the Issues page pre-filtered.
+- `--only contrast,aria,links` (or `ONLY` in the config) on `scan`, `verify`, `fix`, `render` and `lint` checks only those types, and writes to `a11y-report/only-<types>/` with its own history.
+
 ## 0.1.0 — first public release
 
 - `scan` — WCAG 2.2 A + AA scan of the running app with Playwright (axe-core + IBM Equal Access), including modals, tabs and other revealed states.

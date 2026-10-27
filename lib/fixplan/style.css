@@ -88,6 +88,15 @@
 .fp-toggle-label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#344054;cursor:pointer;user-select:none}
 .fp-toggle-label input{width:16px;height:16px;accent-color:var(--ink)}
 .fp-count{font-size:12px;color:var(--muted);margin-left:auto}
+.fp-topics{display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%}
+.fp-topics[hidden]{display:none}
+.fp-topics-label{font-size:12px;color:var(--muted);margin-right:2px}
+.fp-chip{font:inherit;font-size:12px;color:#344054;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px;cursor:pointer}
+.fp-chip span{color:var(--muted);margin-left:2px}
+.fp-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.fp-chip.on span{color:inherit;opacity:.8}
+.fp-chip.clear{border-style:dashed}
+.fp-chip:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
 /* ── Lanes ──────────────────────────────────────────────────────────── */
 .fp-lane{margin-top:22px}
