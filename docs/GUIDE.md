@@ -113,7 +113,7 @@ It also detects HTTP Basic/Windows authentication (it asks for credentials and k
 
 | File | What it is |
 |---|---|
-| `accessibility-report.html` | **Start here.** One self-contained file with three tabs (Dashboard, Fix plan, All findings) and embedded screenshots. Safe to email or attach to a ticket. |
+| `accessibility-report.html` | **Start here.** One self-contained file with three tabs (Overview, Fix plan, All findings) and embedded screenshots. Safe to email or attach to a ticket. |
 | `fix-plan.html` / `fix-plan.json` | The issues in the order to fix them; see [§6](#6-fixing-issues-and-checking-your-fixes). |
 | `dashboard.html` / `report.html` | The same as two linked pages. |
 | `report.json` | Machine-readable results (CI, scripts). |
@@ -150,7 +150,7 @@ It also detects HTTP Basic/Windows authentication (it asks for credentials and k
 
 **Exact locations from the browser scan.** Scan a **dev server** (`npm run dev`, `ng serve`, …) to get exact locations. Dev builds of React, Vue, Angular and Svelte record which file each element came from. Production builds fall back to text search.
 
-**Report filters:** severity, violation vs. review, browser vs. source lint, and a per-page view on the dashboard. The Issues page and the fix plan also filter by **issue type**: Contrast & color, ARIA & roles, Links & buttons, Images & media, Forms & labels, Keyboard & focus, Headings & structure, Zoom & reflow. Pick several at once (for example contrast + ARIA + links). `report.html?type=contrast,aria` opens the Issues page already filtered.
+**Report filters:** severity, violation vs. review, browser vs. source lint, and a per-page view on the dashboard. **All findings** groups the findings by problem (one card per rule, with each distinct element and the pages it is on), and it and the fix plan also filter by **issue type**: Contrast & color, ARIA & roles, Links & buttons, Images & media, Forms & labels, Keyboard & focus, Headings & structure, Zoom & reflow. Pick several at once (for example contrast + ARIA + links). `report.html?type=contrast,aria` opens All findings already filtered (`?page=` works too).
 
 **Checking only some issue types.** To scan for just those types, add `--only`:
 
@@ -219,7 +219,7 @@ Fix verification (vs. the previous scan of each page):
 | **⚠ new** | Wasn't there last time; usually introduced by recent changes. |
 | **? couldn't verify** | The element or the dialog it lived in wasn't there this time, so the tool can't prove a fix. Check by hand or make the dialog open (see [§7](#7-dialogs-tabs-and-other-hidden-ui)). |
 
-`verify` exits with code 1 while anything is still failing or new, so you can use it as a PR check. The dashboard shows the same breakdown under **Fix verification**.
+`verify` exits with code 1 while anything is still failing or new, so you can use it as a PR check. The dashboard shows the same breakdown at the top of the Overview, under **Did the fixes work?**
 
 A normal `scan` also prints this comparison whenever there is a previous run to compare with.
 

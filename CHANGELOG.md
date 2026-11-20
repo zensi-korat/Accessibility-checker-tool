@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased — report redesign
+
+- **One look for every view.** The dashboard, All findings, the fix plan and the single-file report share a masthead (headline numbers and the view tabs), one set of colours with **dark mode**, one icon set (no emoji) and the Atkinson Hyperlegible Next typeface, embedded so reports still work offline (SIL Open Font License, `lib/ui/fonts/OFL.txt`). Shared styles live in `lib/ui/theme.js`.
+- **Overview** is seven sections with a contents rail instead of seventeen stacked panels: Overview (a map of all 56 criteria by result, Where to start, violations by severity), Pages, Fix once, WCAG criteria, Automated checks, Coverage and History. The page picker sits in the rail and no longer covers headings as you scroll.
+- **All findings** shows one card per kind of problem, with each distinct element and the pages it appears on inside, instead of one card per finding. On a 67-page site that is 28 cards instead of 2,102, and the single-file report is about a quarter of the size. Filters (search, page, kind, severity, type, source) sit in a side rail. Contrast findings show the measured colours as swatches.
+- The **“Combined from N scans”** note only appears when pages really come from different scans, as one collapsed line. It used to list every page and push the dashboard below the fold.
+- Export (CSV, JSON, HTML snapshot, print) is one menu. The Pages table explains the health score and shows the 15 worst pages first. The criterion status “Can't support” is now “Needs a person”.
+- The reports pass axe-core (WCAG 2.2 AA and best practice) in light and dark mode. The standalone fix plan now has a `<main>` landmark.
+- Fixed: the page picker in the reports did not open on a mouse click when it sat inside a `<label>`.
+- Fixed: with `LIVE_REGION_CHECKS: true`, contrast sampling and the second engine ran after the interaction checks, so they could measure a page left mid-update (a product grid fading while it reloads) and report contrast failures that do not exist. Interaction checks now run last.
+
 ## 0.2.0 — filter and scan by issue type
 
 - Every rule (axe, the tool's own checks, the source lint) belongs to one issue type: contrast, aria, links, images, forms, keyboard, structure, layout (`lib/categories.js`). Issues carry it as `topic`.

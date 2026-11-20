@@ -80,6 +80,19 @@ const html = `<!doctype html><html lang="en"><head><style>${css}</style></head><
   await page.setContent(`<!doctype html><html lang="en"><body><label for="f">F</label><select id="f" data-a11y-select><option>A</option></select><script>${js}</script><script>${js}</script></body></html>`);
   check(await page.locator('[role=combobox]').count() === 1, 'loading the script twice (single-file report) enhances once');
 
+  // A <label> wrapped around the select (the report's page picker): the label's
+  // default action used to move focus to the hidden select and close the list
+  // the same click had just opened.
+  await page.setContent(`<!doctype html><html lang="en"><body><label><span id="t">Show results for</span><select id="w" data-a11y-select><option>All</option><option>Home</option></select></label><script>${js}</script></body></html>`);
+  const wrapped = page.locator('[role=combobox]');
+  await wrapped.click();
+  await page.waitForTimeout(50);
+  check(await wrapped.getAttribute('aria-expanded') === 'true' && await page.isVisible('[role=listbox]'), 'mouse: a select inside a wrapping <label> opens and stays open');
+  await page.locator('[role=option]', { hasText: 'Home' }).click();
+  check(await page.$eval('#w', (s) => s.value) === 'Home', 'mouse: choosing an option inside a wrapping <label> works');
+  await page.click('#t');
+  check(await page.evaluate(() => document.activeElement.getAttribute('role')) === 'combobox' && await wrapped.getAttribute('aria-expanded') === 'false', 'clicking the wrapping label text focuses the combobox');
+
   check(errors.length === 0, `no page errors${errors.length ? ': ' + errors.join(' | ') : ''}`);
   await browser.close();
   console.log(failures ? `\n${failures} failure(s)` : '\nall passed');

@@ -126,9 +126,9 @@ Everything is written to `a11y-report/`:
 
 | File | Use it for |
 |---|---|
-| `accessibility-report.html` | **The one to share.** One self-contained file with three tabs: Dashboard, Fix plan, All findings. Screenshots are embedded. |
+| `accessibility-report.html` | **The one to share.** One self-contained file with three tabs: Overview, Fix plan, All findings. Screenshots are embedded; light and dark mode. |
 | `fix-plan.html` | Issues in the order to fix them: **Fix first → Fix next → Schedule → Needs a decision → Can wait → Done**. Each card says why it is ranked there, how to fix it for your stack, and where it is in your code. |
-| `dashboard.html` / `report.html` | All 56 WCAG 2.2 A/AA criteria (Failed / Needs review / No automated failures / Manual / N/A) and every finding. |
+| `dashboard.html` / `report.html` | All 56 WCAG 2.2 A/AA criteria (Failed / Partial / No automated failures / Needs a person / Not applicable) and every finding, grouped by problem. |
 | `report.json`, `a11y-results.xml` | Machine-readable results and JUnit for CI test tabs. |
 
 Decisions you make in the fix plan (in progress, snoozed, won't fix) are saved to `a11y.triage.json`. Commit it to share them with your team.
